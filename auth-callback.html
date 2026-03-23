@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Autenticação OneDrive…</title>
+  <style>
+    body { font-family: sans-serif; display:flex; align-items:center; justify-content:center;
+           height:100vh; margin:0; background:#f0f4f8; flex-direction:column; gap:12px; }
+    .spinner { width:40px; height:40px; border:4px solid #e2e8f0; border-top-color:#2E7D32;
+               border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    p { color:#64748b; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p>Finalizando autenticação com o OneDrive…</p>
+  <script>
+    // This page is loaded in a popup. It just needs to be accessible to the opener.
+    // The parent window reads window.location.href via polling.
+    // Nothing to do here – the URL contains the OAuth code that the opener reads.
+    if (window.opener) {
+      // Signal the parent that we have the URL ready (parent polls location.href)
+      document.querySelector('p').textContent = 'Autenticação concluída! Esta janela será fechada automaticamente.';
+    }
+  </script>
+</body>
+</html>

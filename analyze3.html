@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+<div id="r">loading...</div>
+<script>
+async function run(){
+  try {
+    const res = await fetch('uploads/card_template.pptx');
+    const ab = await res.arrayBuffer();
+    const zip = await JSZip.loadAsync(ab);
+    const files = Object.keys(zip.files);
+    
+    // Get slide1 xml
+    const s1 = await zip.file('ppt/slides/slide1.xml').async('text');
+    // Get rels
+    const rels = await zip.file('ppt/slides/_rels/slide1.xml.rels')?.async('text')||'';
+    // Get pres
+    const pres = await zip.file('ppt/presentation.xml').async('text');
+    
+    // Output raw XML to console for capture
+    console.log('=PRESXML=', pres.substring(0,500));
+    console.log('=RELS=', rels);
+    console.log('=SLIDE1_LEN=', s1.length);
+    console.log('=SLIDE1_FULL=', s1);
+    console.log('=MEDIAFILES=', files.filter(f=>f.startsWith('ppt/media/')).join('|'));
+    
+    document.getElementById('r').textContent = 'done: ' + s1.length + ' chars, rels: ' + rels.length;
+  } catch(e) {
+    console.error('ERR:', e.message);
+    document.getElementById('r').textContent = 'error: ' + e.message;
+  }
+}
+run();
+</script>
+</body>
+</html>
