@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriCard Stine – Cards de Produtividade</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Barlow+Semi+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ========== AUTH SCREEN ========== -->
+<div id="authScreen" class="screen active">
+  <div class="auth-bg">
+    <div class="auth-particles" id="authParticles"></div>
+    <div class="auth-container">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">
+          <i class="fas fa-seedling"></i>
+        </div>
+        <div class="auth-logo-text">
+          <span class="auth-logo-brand">AgriCard</span>
+          <span class="auth-logo-sub">STINE Sementes</span>
+        </div>
+      </div>
+      <p class="auth-subtitle">Plataforma de Cards de Produtividade Agrícola</p>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">
+          <i class="fas fa-sign-in-alt"></i> Entrar
+        </button>
+        <button class="auth-tab" data-tab="register">
+          <i class="fas fa-user-plus"></i> Cadastrar
+        </button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div class="auth-form active" id="loginForm">
+        <form onsubmit="event.preventDefault(); Auth.login();" autocomplete="on">
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> E-mail</label>
+            <input type="email" id="loginEmail" name="email" placeholder="seu@email.com" autocomplete="username" />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-lock"></i> Senha</label>
+            <div class="input-with-toggle">
+              <input type="password" id="loginPassword" name="password" placeholder="••••••••" autocomplete="current-password" />
+              <button type="button" class="btn-eye" onclick="Auth.togglePassword('loginPassword', this)">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="btnLogin">
+            <i class="fas fa-sign-in-alt"></i> Entrar
+          </button>
+
+        </form>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div class="auth-form" id="registerForm">
+        <form onsubmit="event.preventDefault(); Auth.register();" autocomplete="on">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nome completo *</label>
+              <input type="text" id="regName" name="fullname" placeholder="Seu nome completo" autocomplete="name" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-building"></i> Empresa / Consultoria</label>
+              <input type="text" id="regCompany" name="company" placeholder="Nome da empresa" autocomplete="organization" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> E-mail *</label>
+            <input type="email" id="regEmail" name="reg-email" placeholder="seu@email.com" autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-phone"></i> Telefone</label>
+            <input type="tel" id="regPhone" name="phone" placeholder="(99) 99999-9999" autocomplete="tel" />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-map-marker-alt"></i> Região de Atuação</label>
+            <input type="text" id="regRegion" name="region" placeholder="Ex: Mato Grosso / Cerrado" />
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label><i class="fas fa-lock"></i> Senha *</label>
+              <div class="input-with-toggle">
+                <input type="password" id="regPassword" name="new-password" placeholder="Mín. 6 caracteres" autocomplete="new-password" />
+                <button type="button" class="btn-eye" onclick="Auth.togglePassword('regPassword', this)">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-lock"></i> Confirmar Senha *</label>
+              <div class="input-with-toggle">
+                <input type="password" id="regPasswordConfirm" name="confirm-password" placeholder="Repita a senha" autocomplete="new-password" />
+                <button type="button" class="btn-eye" onclick="Auth.togglePassword('regPasswordConfirm', this)">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- LGPD consent checkbox -->
+          <div class="form-group" style="margin-top:4px">
+            <label class="checkbox-label lgpd-checkbox">
+              <input type="checkbox" id="regLgpd" required />
+              <span>
+                Li e concordo com a
+                <strong>Política de Privacidade</strong> e o
+                <strong>Termo de Consentimento LGPD</strong>.
+                Autorizo o uso dos meus dados pessoais para geração e armazenamento
+                de cards de produtividade agrícola, conforme a
+                Lei Geral de Proteção de Dados (Lei 13.709/2018).
+              </span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary btn-full" id="btnRegister">
+            <i class="fas fa-user-plus"></i> Solicitar Acesso
+          </button>
+          <p class="auth-info">
+            <i class="fas fa-shield-alt"></i>
+            Seu acesso será analisado e aprovado pelo administrador.
+          </p>
+        </form>
+      </div>
+
+      <div id="authMessage" class="auth-message hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ADMIN PANEL ========== -->
+<div id="adminScreen" class="screen">
+
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <button class="hamburger-btn" id="adminHamburger" onclick="App.toggleMobileSidebar('admin')">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="mobile-logo">
+      <i class="fas fa-seedling"></i> AgriCard Stine
+    </div>
+    <button class="btn-icon-mobile" id="btnAdminLogoutMobile" title="Sair">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="adminSidebarOverlay" onclick="App.toggleMobileSidebar('admin')"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="adminSidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon"><i class="fas fa-seedling"></i></div>
+        <div>
+          <span class="sidebar-brand">AgriCard</span>
+          <span class="sidebar-sub">STINE Sementes</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">PRINCIPAL</div>
+        <a href="#" class="nav-item active" data-section="admin-dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+          <span class="nav-badge" id="navBadgePending" style="display:none"></span>
+        </a>
+        <div class="nav-section-label">GERENCIAMENTO</div>
+        <a href="#" class="nav-item" data-section="admin-users">
+          <i class="fas fa-users"></i>
+          <span>Usuários</span>
+        </a>
+        <a href="#" class="nav-item" data-section="admin-varieties">
+          <i class="fas fa-leaf"></i>
+          <span>Variedades</span>
+        </a>
+        <a href="#" class="nav-item" data-section="admin-records">
+          <i class="fas fa-chart-bar"></i>
+          <span>Registros</span>
+        </a>
+        <a href="#" class="nav-item" data-section="admin-templates">
+          <i class="fas fa-palette"></i>
+          <span>Layouts de Card</span>
+          <span class="nav-badge-new">NOVO</span>
+        </a>
+        <a href="#" class="nav-item" data-section="admin-pptx-studio">
+          <i class="fas fa-magic"></i>
+          <span>PPTX Card Studio</span>
+          <span class="nav-badge-new">PRO</span>
+        </a>
+        <div class="nav-section-label">RELATÓRIOS</div>
+        <a href="#" class="nav-item" data-section="admin-cards-gallery">
+          <i class="fas fa-images"></i>
+          <span>Galeria de Cards</span>
+        </a>
+        <a href="#" class="nav-item" data-section="admin-termos">
+          <i class="fas fa-file-contract"></i>
+          <span>Termos Enviados</span>
+        </a>
+        <a href="#" class="nav-item" data-section="admin-audit">
+          <i class="fas fa-history"></i>
+          <span>Auditoria</span>
+        </a>
+        <div class="nav-section-label">SISTEMA</div>
+        <a href="#" class="nav-item" data-section="admin-settings">
+          <i class="fas fa-cog"></i>
+          <span>Configurações</span>
+        </a>
+      </nav>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar"><i class="fas fa-user-shield"></i></div>
+        <div class="sidebar-user-info">
+          <span id="adminUserName">Administrador</span>
+          <small>Administrador</small>
+        </div>
+        <button class="btn-icon" id="btnAdminLogout" title="Sair">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- ====== Dashboard ====== -->
+      <section id="admin-dashboard" class="content-section active">
+        <div class="page-header">
+          <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+          <span class="page-date" id="dashboardDate"></span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card green" onclick="App.navigate('admin-users')">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="statTotalUsers">0</span>
+              <span class="stat-label">Usuários Aprovados</span>
+            </div>
+            <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+          <div class="stat-card orange" onclick="App.navigate('admin-users')">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="statPendingUsers">0</span>
+              <span class="stat-label">Aguardando Aprovação</span>
+            </div>
+            <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+          <div class="stat-card blue" onclick="App.navigate('admin-records')">
+            <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="statTotalRecords">0</span>
+              <span class="stat-label">Registros de Produtividade</span>
+            </div>
+            <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+          <div class="stat-card teal" onclick="App.navigate('admin-varieties')">
+            <div class="stat-icon"><i class="fas fa-leaf"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="statTotalVarieties">0</span>
+              <span class="stat-label">Variedades Cadastradas</span>
+            </div>
+            <div class="stat-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+        </div>
+
+        <!-- Pending Users Alert -->
+        <div class="alert-card orange" id="pendingAlert" style="display:none;">
+          <div class="alert-header">
+            <i class="fas fa-bell"></i>
+            <h3>Aprovações Pendentes</h3>
+          </div>
+          <div id="pendingUsersList"></div>
+        </div>
+
+        <!-- Recent Records -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-history"></i> Registros Recentes</h3>
+            <button class="btn-sm btn-secondary" onclick="App.navigate('admin-records')">
+              Ver todos <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+          <div id="recentRecordsList" class="table-wrapper"></div>
+        </div>
+      </section>
+
+      <!-- ====== Users Management ====== -->
+      <section id="admin-users" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-users"></i> Gerenciar Usuários</h1>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="filter-tabs" id="userFilterTabs">
+              <button class="filter-btn active" data-filter="all">
+                <i class="fas fa-list"></i> Todos
+              </button>
+              <button class="filter-btn" data-filter="pending">
+                <i class="fas fa-clock"></i> Pendentes
+              </button>
+              <button class="filter-btn" data-filter="approved">
+                <i class="fas fa-check"></i> Aprovados
+              </button>
+              <button class="filter-btn" data-filter="rejected">
+                <i class="fas fa-times"></i> Rejeitados
+              </button>
+            </div>
+          </div>
+          <div id="usersTableContainer" class="table-wrapper"></div>
+        </div>
+      </section>
+
+      <!-- ====== Varieties Management ====== -->
+      <section id="admin-varieties" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-leaf"></i> Variedades</h1>
+          <button class="btn-primary" id="btnAddVariety">
+            <i class="fas fa-plus"></i> Nova Variedade
+          </button>
+        </div>
+        <div class="varieties-grid" id="varietiesGrid"></div>
+      </section>
+
+      <!-- ====== Records Management ====== -->
+      <section id="admin-records" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-chart-bar"></i> Todos os Registros</h1>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="recordsSearch" placeholder="Buscar registros..." oninput="Admin.filterRecords(this.value)" />
+            </div>
+            <button class="btn-secondary" onclick="Admin.exportAllRecordsCSV()">
+              <i class="fas fa-file-csv"></i> Exportar CSV
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div id="allRecordsContainer" class="table-wrapper"></div>
+        </div>
+      </section>
+
+      <!-- ====== Templates Management ====== -->
+      <section id="admin-templates" class="content-section">
+        <div class="page-header">
+          <div>
+            <h1><i class="fas fa-palette"></i> Layouts de Card</h1>
+            <p class="page-subtitle">Gerencie os modelos de card para geração de imagens</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-secondary" onclick="FileImporter.openModal()">
+              <i class="fas fa-file-import"></i> Importar PPTX / PDF
+            </button>
+            <button class="btn-primary" onclick="TemplatesManager.openModal()">
+              <i class="fas fa-plus"></i> Novo Layout
+            </button>
+          </div>
+        </div>
+
+        <!-- Templates Stats Bar -->
+        <div class="templates-info-bar">
+          <div class="tpl-info-item">
+            <i class="fas fa-layer-group"></i>
+            <span id="tplCountText">0 templates cadastrados</span>
+          </div>
+          <div class="tpl-info-item tpl-info-active">
+            <i class="fas fa-check-circle"></i>
+            <span id="tplActiveText">Nenhum ativo</span>
+          </div>
+          <div class="tpl-info-item">
+            <i class="fas fa-info-circle"></i>
+            <span>O template ativo é usado em todos os cards gerados</span>
+          </div>
+        </div>
+
+        <div id="templatesGrid" class="templates-grid"></div>
+      </section>
+
+      <!-- ====== Cards Gallery ====== -->
+      <section id="admin-cards-gallery" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-images"></i> Galeria de Cards</h1>
+          <span class="page-subtitle">Visualize e baixe os cards gerados</span>
+        </div>
+        <div id="cardsGalleryGrid" class="gallery-grid"></div>
+      </section>
+
+      <!-- ====== PPTX Card Studio ====== -->
+      <section id="admin-pptx-studio" class="content-section">
+        <div class="page-header">
+          <div>
+            <h1><i class="fas fa-magic"></i> PPTX Card Studio</h1>
+            <p class="page-subtitle">Gere cards pixel-perfect a partir de templates PPTX com placeholders dinâmicos</p>
+          </div>
+          <button class="btn-primary" onclick="PptxStudio.openModal()">
+            <i class="fas fa-play"></i> Abrir Studio
+          </button>
+        </div>
+
+        <!-- Info cards -->
+        <div class="studio-info-grid">
+          <div class="studio-info-card">
+            <div class="studio-info-icon green"><i class="fas fa-file-powerpoint"></i></div>
+            <div class="studio-info-body">
+              <h4>Upload de PPTX</h4>
+              <p>Importe qualquer apresentação PowerPoint. O sistema detecta e extrai automaticamente os slides e placeholders.</p>
+            </div>
+          </div>
+          <div class="studio-info-card">
+            <div class="studio-info-icon blue"><i class="fas fa-tags"></i></div>
+            <div class="studio-info-body">
+              <h4>Placeholders Inteligentes</h4>
+              <p>Adicione <code>{{produtividade}}</code>, <code>{{fazenda}}</code>, <code>{{cidade}}</code> etc. diretamente nos textos do PowerPoint.</p>
+            </div>
+          </div>
+          <div class="studio-info-card">
+            <div class="studio-info-icon orange"><i class="fas fa-ruler-combined"></i></div>
+            <div class="studio-info-body">
+              <h4>Layout Preservado</h4>
+              <p>Fonte, tamanho, cor, posição X/Y e dimensões das caixas são preservados com precisão pixel-perfect.</p>
+            </div>
+          </div>
+          <div class="studio-info-card">
+            <div class="studio-info-icon teal"><i class="fas fa-layer-group"></i></div>
+            <div class="studio-info-body">
+              <h4>Geração em Lote</h4>
+              <p>Importe uma planilha Excel ou CSV com múltiplos registros e exporte todos os cards de uma vez em ZIP.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Placeholders reference -->
+        <div class="card studio-ph-reference">
+          <div class="card-header">
+            <h3><i class="fas fa-book"></i> Referência de Placeholders</h3>
+            <button class="btn-sm btn-secondary" onclick="PptxStudio.openModal()">
+              <i class="fas fa-play"></i> Iniciar Studio
+            </button>
+          </div>
+          <div class="ph-reference-grid">
+            <div class="ph-ref-item ph-ref-derived-group">
+              <div class="ph-ref-derived-label"><i class="fas fa-cut"></i> Produtividade (separada automaticamente)</div>
+              <div class="ph-ref-derived-items">
+                <div class="ph-ref-item"><code>{{produtividade}}</code><span>Valor completo (ex: 72,6)</span></div>
+                <div class="ph-ref-item"><code>{{produtividade_int}}</code><span>Só o inteiro (ex: <strong>72</strong>)</span></div>
+                <div class="ph-ref-item"><code>{{produtividade_dec}}</code><span>Só o decimal (ex: <strong>,6</strong>)</span></div>
+              </div>
+            </div>
+            <div class="ph-ref-item"><code>{{unidade}}</code><span>Unidade (sc/ha, kg/ha...)</span></div>
+            <div class="ph-ref-item"><code>{{fazenda}}</code><span>Nome da Fazenda</span></div>
+            <div class="ph-ref-item"><code>{{produtor}}</code><span>Nome do Produtor</span></div>
+            <div class="ph-ref-item"><code>{{cidade}}</code><span>Cidade</span></div>
+            <div class="ph-ref-item"><code>{{estado}}</code><span>Estado (UF)</span></div>
+            <div class="ph-ref-item"><code>{{variedade}}</code><span>Código da Variedade</span></div>
+            <div class="ph-ref-item"><code>{{cultura}}</code><span>Cultura (Soja, Milho...)</span></div>
+            <div class="ph-ref-item"><code>{{safra}}</code><span>Safra (ex: 2024/2025)</span></div>
+            <div class="ph-ref-item"><code>{{data_plantio}}</code><span>Data de Plantio</span></div>
+            <div class="ph-ref-item"><code>{{data_colheita}}</code><span>Data de Colheita</span></div>
+            <div class="ph-ref-item"><code>{{area}}</code><span>Área Colhida (ex: 25 ha)</span></div>
+            <div class="ph-ref-item"><code>{{tecnologia}}</code><span>Tecnologia</span></div>
+            <div class="ph-ref-item"><code>{{populacao}}</code><span>População de Plantas</span></div>
+            <div class="ph-ref-item"><code>{{notas}}</code><span>Observações</span></div>
+            <div class="ph-ref-item"><code>{{logo_cliente}}</code><span>Logo do Cliente (imagem)</span></div>
+            <div class="ph-ref-item"><code>{{logo_marca}}</code><span>Logo da Marca (imagem)</span></div>
+          </div>
+
+          <!-- CSV template download hint -->
+          <div class="csv-template-hint">
+            <i class="fas fa-file-excel"></i>
+            <span>Modelo de planilha para lote: colunas com os nomes dos placeholders sem <code>{{}}</code>.</span>
+            <button class="btn-sm btn-secondary" onclick="PptxStudio.downloadCsvTemplate()">
+              <i class="fas fa-download"></i> Baixar modelo CSV
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== Termos Enviados (Admin) ====== -->
+      <section id="admin-termos" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-file-contract"></i> Termos de Autorização</h1>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" onclick="Admin.exportTermosCSV()">
+              <i class="fas fa-file-csv"></i> Exportar CSV
+            </button>
+            <button class="btn-secondary" onclick="Admin.loadTermos()">
+              <i class="fas fa-sync"></i> Atualizar
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="termosSearch" placeholder="Buscar por produtor, variedade, cidade..."
+                oninput="Admin.filterTermos(this.value)" />
+            </div>
+            <span id="termosCount" style="font-size:13px;color:var(--gray-500)"></span>
+          </div>
+          <div id="termosContainer" class="table-wrapper">
+            <div class="empty-state">
+              <i class="fas fa-file-contract"></i>
+              <p>Carregando termos...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== Auditoria (Admin) ====== -->
+      <section id="admin-audit" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-history"></i> Log de Auditoria</h1>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" onclick="Admin.exportAuditCSV()">
+              <i class="fas fa-file-csv"></i> Exportar CSV
+            </button>
+            <button class="btn-secondary" onclick="Admin.loadAuditLogs()">
+              <i class="fas fa-sync"></i> Atualizar
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="auditSearch" placeholder="Buscar por usuário, ação, produtor..."
+                oninput="Admin.filterAuditLogs(this.value)" />
+            </div>
+            <span id="auditCount" style="font-size:13px;color:var(--gray-500)"></span>
+          </div>
+          <div id="auditContainer" class="table-wrapper">
+            <div class="empty-state">
+              <i class="fas fa-history"></i>
+              <p>Carregando logs...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== Settings ====== -->
+      <section id="admin-settings" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-cog"></i> Configurações</h1>
+          <span class="page-subtitle">Gerencie perfil, identidade visual e administradores</span>
+        </div>
+
+        <div class="settings-layout">
+
+          <!-- ── COLUNA ESQUERDA ── -->
+          <div class="settings-col">
+
+            <!-- Perfil do Admin -->
+            <div class="settings-card" id="settingsSectionProfile">
+              <div class="settings-card-header">
+                <div class="settings-card-icon green"><i class="fas fa-user-circle"></i></div>
+                <div>
+                  <h3>Meu Perfil</h3>
+                  <p>Atualize suas informações pessoais</p>
+                </div>
+              </div>
+              <div class="settings-card-body">
+                <div class="settings-profile-top">
+                  <div class="settings-profile-avatar" id="settingProfileAvatar">A</div>
+                  <div class="settings-profile-info">
+                    <strong id="settingProfileNameDisplay"></strong>
+                    <small id="settingProfileEmailDisplay"></small>
+                  </div>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label><i class="fas fa-user"></i> Nome completo *</label>
+                    <input type="text" id="settingAdminName" placeholder="Seu nome completo" />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> E-mail *</label>
+                    <input type="email" id="settingAdminEmail" placeholder="seu@email.com" />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fas fa-building"></i> Empresa</label>
+                    <input type="text" id="settingAdminCompany" placeholder="Nome da empresa" />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fas fa-phone"></i> Telefone</label>
+                    <input type="tel" id="settingAdminPhone" placeholder="(99) 99999-9999" />
+                  </div>
+                  <div class="form-group form-group-full">
+                    <label><i class="fas fa-map-marker-alt"></i> Região</label>
+                    <input type="text" id="settingAdminRegion" placeholder="Ex: Mato Grosso" />
+                  </div>
+                </div>
+                <div class="form-actions" style="margin-top:12px">
+                  <button class="btn-primary" id="btnSaveProfile" onclick="Settings.saveProfile()">
+                    <i class="fas fa-save"></i> Salvar Perfil
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alterar Senha -->
+            <div class="settings-card" id="settingsSectionPassword">
+              <div class="settings-card-header">
+                <div class="settings-card-icon orange"><i class="fas fa-lock"></i></div>
+                <div>
+                  <h3>Alterar Senha</h3>
+                  <p>Troque a senha da sua conta admin</p>
+                </div>
+              </div>
+              <div class="settings-card-body">
+                <form onsubmit="event.preventDefault(); Settings.changePassword();">
+                <input type="text" name="username" autocomplete="username" style="display:none" />
+                <div class="form-group">
+                  <label><i class="fas fa-lock"></i> Senha Atual *</label>
+                  <div class="input-with-toggle">
+                    <input type="password" id="settingCurrentPass" placeholder="Senha atual" autocomplete="current-password" />
+                    <button type="button" class="btn-eye" onclick="Auth.togglePassword('settingCurrentPass', this)"><i class="fas fa-eye"></i></button>
+                  </div>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label><i class="fas fa-key"></i> Nova Senha *</label>
+                    <div class="input-with-toggle">
+                      <input type="password" id="settingNewPass" placeholder="Mín. 6 caracteres" autocomplete="new-password" />
+                      <button type="button" class="btn-eye" onclick="Auth.togglePassword('settingNewPass', this)"><i class="fas fa-eye"></i></button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fas fa-key"></i> Confirmar Nova Senha *</label>
+                    <div class="input-with-toggle">
+                      <input type="password" id="settingConfirmPass" placeholder="Repita a nova senha" autocomplete="new-password" />
+                      <button type="button" class="btn-eye" onclick="Auth.togglePassword('settingConfirmPass', this)"><i class="fas fa-eye"></i></button>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions" style="margin-top:12px">
+                  <button type="submit" class="btn-primary" id="btnChangePassword">
+                    <i class="fas fa-key"></i> Alterar Senha
+                  </button>
+                </div>
+                </form>
+              </div>
+            </div>
+
+          </div><!-- /settings-col -->
+
+          <!-- ── COLUNA DIREITA ── -->
+          <div class="settings-col">
+
+            <!-- Identidade Visual -->
+            <div class="settings-card" id="settingsSectionBranding">
+              <div class="settings-card-header">
+                <div class="settings-card-icon blue"><i class="fas fa-paint-brush"></i></div>
+                <div>
+                  <h3>Identidade Visual</h3>
+                  <p>Logo, nome e cores do aplicativo</p>
+                </div>
+              </div>
+              <div class="settings-card-body">
+
+                <!-- Logo upload -->
+                <div class="form-group">
+                  <label><i class="fas fa-image"></i> Logo do Aplicativo</label>
+                  <div class="settings-logo-area">
+                    <div id="settingLogoPreview" class="settings-logo-preview">
+                      <div class="setting-logo-placeholder"><i class="fas fa-image"></i><span>Nenhum logo cadastrado</span></div>
+                    </div>
+                    <div class="settings-logo-actions">
+                      <button type="button" class="btn-secondary btn-sm" onclick="document.getElementById('settingLogoInput').click()">
+                        <i class="fas fa-upload"></i> Enviar Logo
+                      </button>
+                      <button type="button" class="btn-secondary btn-sm" onclick="Settings.removeLogo()">
+                        <i class="fas fa-trash"></i> Remover
+                      </button>
+                    </div>
+                    <input type="file" id="settingLogoInput" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      style="display:none" onchange="Settings.handleLogoUpload(this.files[0])" />
+                    <input type="hidden" id="settingLogoUrl" />
+                    <small class="form-hint">PNG, JPG, WEBP ou SVG · máx. 2MB · aparece na tela de login, sidebar e no app todo</small>
+                  </div>
+                </div>
+
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label><i class="fas fa-tag"></i> Nome do App *</label>
+                    <input type="text" id="settingAppName" placeholder="Ex: AgriCard" />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fas fa-tag"></i> Subtítulo / Marca</label>
+                    <input type="text" id="settingAppSubname" placeholder="Ex: STINE Sementes" />
+                  </div>
+                  <div class="form-group form-group-full">
+                    <label><i class="fas fa-align-left"></i> Tagline (tela de login)</label>
+                    <input type="text" id="settingAppTagline" placeholder="Ex: Plataforma de Cards de Produtividade" />
+                  </div>
+                  <div class="form-group">
+                    <label><i class="fas fa-palette"></i> Cor Principal</label>
+                    <div class="color-pick-row">
+                      <input type="color" id="settingPrimaryColor" value="#2E7D32" />
+                      <span id="settingPrimaryColorHex">#2E7D32</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top:12px">
+                  <button class="btn-primary" id="btnSaveBranding" onclick="Settings.saveBranding()">
+                    <i class="fas fa-paint-brush"></i> Salvar Identidade Visual
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Zona de Perigo -->
+            <div class="settings-card settings-card-danger" id="settingsSectionDanger">
+              <div class="settings-card-header">
+                <div class="settings-card-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div>
+                  <h3>Zona de Perigo</h3>
+                  <p>Ações destrutivas e irreversíveis</p>
+                </div>
+              </div>
+              <div class="settings-card-body">
+                <div class="danger-actions">
+                  <div class="danger-item">
+                    <div class="danger-item-info">
+                      <strong>Excluir todos os registros</strong>
+                      <p>Remove permanentemente todos os registros de produtividade</p>
+                    </div>
+                    <button class="btn-danger" onclick="Settings.clearAllRecords()">
+                      <i class="fas fa-trash-alt"></i> Excluir Tudo
+                    </button>
+                  </div>
+                  <div class="danger-item">
+                    <div class="danger-item-info">
+                      <strong>Excluir todas as variedades</strong>
+                      <p>Remove todas as variedades e seus modelos de card vinculados</p>
+                    </div>
+                    <button class="btn-danger" onclick="Settings.clearAllVarieties()">
+                      <i class="fas fa-leaf"></i> Excluir Tudo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /settings-col -->
+
+        </div><!-- /settings-layout -->
+
+        <!-- ── OneDrive Integration (seção larga) ── -->
+        <div class="settings-card" style="margin-top:24px" id="settingsSectionOneDrive">
+          <div class="settings-card-header">
+            <div class="settings-card-icon blue"><i class="fab fa-microsoft"></i></div>
+            <div>
+              <h3>Integração OneDrive / Microsoft 365</h3>
+              <p>Configure o armazenamento automático de Termos e Cards no OneDrive</p>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+              <span id="onedriveSyncStatus" class="badge" style="background:#e2e8f0;color:#64748b">
+                <i class="fas fa-circle" style="font-size:8px"></i> Desconectado
+              </span>
+              <button class="btn-secondary btn-sm" onclick="Settings.testOneDriveConnection()">
+                <i class="fas fa-plug"></i> Testar Conexão
+              </button>
+            </div>
+          </div>
+          <div class="settings-card-body">
+            <div class="od-info-box">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                <strong>Como configurar:</strong>
+                Registre um aplicativo no
+                <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps" target="_blank" rel="noopener">
+                  Azure Active Directory
+                </a>
+                e cole o <strong>Client ID</strong> e <strong>Tenant ID</strong> abaixo.
+                O tipo de autenticação é <em>OAuth2 PKCE</em> (sem senha armazenada).
+                Adicione <code id="odRedirectUriDisplay"></code> como URI de redirecionamento.
+              </div>
+            </div>
+            <div class="form-grid-2" style="margin-top:16px">
+              <div class="form-group">
+                <label><i class="fab fa-microsoft"></i> Client ID (Application ID) *</label>
+                <input type="text" id="odClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-building"></i> Tenant ID</label>
+                <input type="text" id="odTenantId" placeholder="common (ou ID do tenant corporativo)" />
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-folder"></i> Pasta Base — Termos</label>
+                <input type="text" id="odPastaTermos" placeholder="/Cards_Produtividade/Termos/" />
+                <small class="form-hint">Subpastas criadas automaticamente: /{ano}/{cultura}/</small>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-folder"></i> Pasta Base — Cards</label>
+                <input type="text" id="odPastaCards" placeholder="/Cards_Produtividade/Cards/" />
+                <small class="form-hint">Subpastas criadas automaticamente: /{ano}/{cultura}/</small>
+              </div>
+              <div class="form-group form-group-full">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="odEnabled" />
+                  <span><strong>Habilitar integração OneDrive</strong> — ativa o envio automático de termos e cards</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top:12px">
+              <button class="btn-secondary" onclick="Settings.loadOneDriveConfig()">
+                <i class="fas fa-undo"></i> Cancelar
+              </button>
+              <button class="btn-primary" id="btnSaveOneDrive" onclick="Settings.saveOneDriveConfig()">
+                <i class="fas fa-save"></i> Salvar Configuração OneDrive
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ADMINS (seção larga) ── -->
+        <div class="settings-card" style="margin-top:24px" id="settingsSectionAdmins">
+          <div class="settings-card-header">
+            <div class="settings-card-icon teal"><i class="fas fa-user-shield"></i></div>
+            <div>
+              <h3>Administradores</h3>
+              <p>Gerencie contas com acesso de administrador</p>
+            </div>
+            <button class="btn-primary" style="margin-left:auto" onclick="Settings.toggleAddAdminForm()">
+              <i class="fas fa-user-plus"></i> Novo Admin
+            </button>
+          </div>
+
+          <!-- Accordion: formulário novo admin -->
+          <div class="settings-accordion" id="addAdminAccordion">
+            <div class="settings-accordion-body">
+              <h4 style="margin:0 0 14px;font-size:14px;color:var(--gray-700)"><i class="fas fa-user-plus"></i> Criar Novo Administrador</h4>
+              <form onsubmit="event.preventDefault(); Settings.addAdmin();">
+              <input type="text" name="username" autocomplete="username" style="display:none" />
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Nome completo *</label>
+                  <input type="text" id="newAdminName" placeholder="Nome do administrador" />
+                </div>
+                <div class="form-group">
+                  <label>E-mail *</label>
+                  <input type="email" id="newAdminEmail" placeholder="admin@empresa.com.br" />
+                </div>
+                <div class="form-group">
+                  <label>Empresa</label>
+                  <input type="text" id="newAdminCompany" placeholder="Nome da empresa" />
+                </div>
+                <div class="form-group">
+                  <!-- espaço vazio para alinhamento -->
+                </div>
+                <div class="form-group">
+                  <label>Senha *</label>
+                  <div class="input-with-toggle">
+                    <input type="password" id="newAdminPass" placeholder="Mín. 6 caracteres" autocomplete="new-password" />
+                    <button type="button" class="btn-eye" onclick="Auth.togglePassword('newAdminPass', this)"><i class="fas fa-eye"></i></button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Confirmar Senha *</label>
+                  <div class="input-with-toggle">
+                    <input type="password" id="newAdminPassConfirm" placeholder="Repita a senha" autocomplete="new-password" />
+                    <button type="button" class="btn-eye" onclick="Auth.togglePassword('newAdminPassConfirm', this)"><i class="fas fa-eye"></i></button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:12px">
+                <button type="button" class="btn-secondary" onclick="Settings.toggleAddAdminForm()">
+                  <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="submit" class="btn-primary" id="btnAddAdmin">
+                  <i class="fas fa-user-plus"></i> Criar Administrador
+                </button>
+              </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="settings-card-body">
+            <div id="adminsListContainer"></div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ========== USER PANEL ========== -->
+<div id="userScreen" class="screen">
+
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <button class="hamburger-btn" id="userHamburger" onclick="App.toggleMobileSidebar('user')">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="mobile-logo">
+      <i class="fas fa-seedling"></i> AgriCard Stine
+    </div>
+    <button class="btn-icon-mobile" id="btnUserLogoutMobile" title="Sair">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
+  <div class="sidebar-overlay" id="userSidebarOverlay" onclick="App.toggleMobileSidebar('user')"></div>
+
+  <div class="app-layout">
+    <aside class="sidebar" id="userSidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon"><i class="fas fa-seedling"></i></div>
+        <div>
+          <span class="sidebar-brand">AgriCard</span>
+          <span class="sidebar-sub">STINE Sementes</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">MEU PAINEL</div>
+        <a href="#" class="nav-item active" data-section="user-dashboard">
+          <i class="fas fa-home"></i>
+          <span>Início</span>
+        </a>
+        <a href="#" class="nav-item" data-section="user-new-record">
+          <i class="fas fa-plus-circle"></i>
+          <span>Novo Registro</span>
+        </a>
+        <a href="#" class="nav-item" data-section="user-records">
+          <i class="fas fa-list"></i>
+          <span>Meus Registros</span>
+        </a>
+        <a href="#" class="nav-item" data-section="user-cards">
+          <i class="fas fa-images"></i>
+          <span>Meus Cards</span>
+        </a>
+      </nav>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar user-avatar"><i class="fas fa-user-circle"></i></div>
+        <div class="sidebar-user-info">
+          <span id="userUserName">Usuário</span>
+          <small id="userCompanyName">Empresa</small>
+        </div>
+        <button class="btn-icon" id="btnUserLogout" title="Sair">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+
+      <!-- ====== User Dashboard ====== -->
+      <section id="user-dashboard" class="content-section active">
+        <div class="page-header">
+          <div>
+            <h1><i class="fas fa-home"></i> Meu Painel</h1>
+            <p class="page-welcome" id="userWelcome"></p>
+          </div>
+          <button class="btn-primary" onclick="App.navigate('user-new-record')">
+            <i class="fas fa-plus"></i> Novo Registro
+          </button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="userStatRecords">0</span>
+              <span class="stat-label">Meus Registros</span>
+            </div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon"><i class="fas fa-image"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="userStatCards">0</span>
+              <span class="stat-label">Cards Publicados</span>
+            </div>
+          </div>
+          <div class="stat-card teal">
+            <div class="stat-icon"><i class="fas fa-download"></i></div>
+            <div class="stat-body">
+              <span class="stat-value" id="userStatDownloads">0</span>
+              <span class="stat-label">Downloads</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Start Banner -->
+        <div class="quick-start-banner" id="quickStartBanner" style="display:none;">
+          <div class="quick-start-icon"><i class="fas fa-rocket"></i></div>
+          <div class="quick-start-text">
+            <strong>Pronto para criar seu primeiro card?</strong>
+            <p>Registre os dados de produtividade e gere seu card profissional para redes sociais.</p>
+          </div>
+          <button class="btn-primary" onclick="App.navigate('user-new-record')">
+            <i class="fas fa-plus"></i> Criar Agora
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-history"></i> Registros Recentes</h3>
+            <button class="btn-secondary btn-sm" onclick="App.navigate('user-records')">
+              Ver todos <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+          <div id="userRecentRecords" class="table-wrapper"></div>
+        </div>
+      </section>
+
+      <!-- ====== New Record Form ====== -->
+      <section id="user-new-record" class="content-section">
+        <div class="page-header">
+          <h1 id="formTitle"><i class="fas fa-plus-circle"></i> Novo Registro de Produtividade</h1>
+          <button class="btn-secondary" onclick="User.cancelEdit()">
+            <i class="fas fa-arrow-left"></i> Voltar
+          </button>
+        </div>
+
+        <div class="form-card">
+          <!-- Progress Steps -->
+          <div class="form-steps">
+            <div class="form-step active" data-step="1">
+              <div class="step-num">1</div>
+              <span>Variedade</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="form-step" data-step="2">
+              <div class="step-num">2</div>
+              <span>Dados do Campo</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="form-step" data-step="3">
+              <div class="step-num">3</div>
+              <span>Localização</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <!-- Coluna 1 -->
+            <div class="form-group">
+              <label><i class="fas fa-leaf"></i> Variedade / Cultivar *</label>
+              <select id="recVariety">
+                <option value="">Selecione a variedade...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-flask"></i> Tecnologia</label>
+              <input type="text" id="recTechnology" placeholder="Ex: Conkesta E3" readonly />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-seedling"></i> Cultura *</label>
+              <input type="text" id="recCulture" placeholder="Ex: Soja" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-calendar-alt"></i> Safra *</label>
+              <input type="text" id="recSeason" placeholder="Ex: 25/26" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-calendar-plus"></i> Data de Plantio</label>
+              <input type="text" id="recPlantingDate" placeholder="DD/MM/AAAA" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-calendar-check"></i> Data de Colheita</label>
+              <input type="text" id="recHarvestDate" placeholder="DD/MM/AAAA" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-tachometer-alt"></i> Produtividade *</label>
+              <div class="input-with-suffix">
+                <input type="text" id="recProductivity" placeholder="Ex: 110,7 ou 72,6" inputmode="decimal" />
+                <select id="recUnit" class="input-suffix-select">
+                  <option value="sc/ha">sc/ha</option>
+                  <option value="sc/alq">sc/alq</option>
+                  <option value="kg/ha">kg/ha</option>
+                  <option value="t/ha">t/ha</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-expand-arrows-alt"></i> Área Colhida *</label>
+              <input type="text" id="recArea" placeholder="Ex: 25 ha | sequeiro" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-map-marker-alt"></i> Cidade *</label>
+              <input type="text" id="recCity" placeholder="Ex: Nova Lacerda" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-map"></i> Estado (UF) *</label>
+              <input type="text" id="recState" placeholder="Ex: MT" maxlength="2" style="text-transform:uppercase" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nome do Produtor *</label>
+              <input type="text" id="recProducer" placeholder="Ex: João da Silva" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-home"></i> Nome da Fazenda *</label>
+              <input type="text" id="recFarm" placeholder="Ex: Fazenda São João" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-users"></i> Pop. de Plantas</label>
+              <input type="text" id="recPopulation" placeholder="Ex: 350.000 pl/ha" />
+            </div>
+            <div class="form-group form-group-full">
+              <label><i class="fas fa-sticky-note"></i> Observações</label>
+              <textarea id="recNotes" rows="2" placeholder="Informações adicionais, condições de cultivo..."></textarea>
+            </div>
+          </div>
+
+          <!-- ═══ TERMO DE AUTORIZAÇÃO ═══ -->
+          <div class="form-section-divider">
+            <i class="fas fa-file-contract"></i> Termo de Autorização (obrigatório)
+          </div>
+
+          <div class="form-group form-group-full">
+            <label>
+              <i class="fas fa-file-alt"></i> Arquivo do Termo *
+              <span class="label-hint">PDF, JPG ou PNG — máx. 10 MB</span>
+            </label>
+
+            <div id="termoDropzone" class="termo-dropzone">
+              <input type="file" id="recTermo" accept=".pdf,.jpg,.jpeg,.png" style="display:none" />
+              <div class="termo-dropzone-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+              </div>
+              <div class="termo-dropzone-title">Arraste o termo aqui ou clique para selecionar</div>
+              <div class="termo-dropzone-sub">Formatos aceitos: PDF · JPG · PNG (máx. 10 MB)</div>
+            </div>
+
+            <!-- Status do arquivo -->
+            <div id="termoStatus" class="termo-status hidden">
+              <i class="fas fa-check-circle" style="color:var(--green)"></i>
+              <span id="termoFileName" style="font-weight:600"></span>
+              <span id="termoFileSize" style="color:var(--gray-500);font-size:12px;margin-left:6px"></span>
+              <button type="button" class="btn-sm btn-secondary" style="margin-left:auto;padding:2px 8px"
+                onclick="User._resetTermo();document.getElementById('recTermo').value=''">
+                <i class="fas fa-times"></i> Remover
+              </button>
+            </div>
+
+            <p class="form-hint" style="margin-top:6px">
+              <i class="fas fa-info-circle" style="color:var(--blue)"></i>
+              O nome do arquivo será padronizado automaticamente para:
+              <code>nome_produtor_variedade_cidade_YYYY-MM-DD.ext</code>
+            </p>
+          </div>
+
+          <!-- LGPD consent para criação de registro -->
+          <div class="form-group form-group-full">
+            <label class="checkbox-label lgpd-checkbox">
+              <input type="checkbox" id="recLgpdConsent" required />
+              <span>
+                <strong>Confirmação LGPD:</strong>
+                Declaro que obtive o consentimento do produtor para coletar,
+                armazenar e utilizar seus dados pessoais (nome, localização,
+                dados de produtividade) para geração e divulgação de cards
+                agrícolas, conforme autorizado pelo próprio produtor, em
+                conformidade com a Lei 13.709/2018 (LGPD).
+              </span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-secondary" id="btnSaveDraft">
+              <i class="fas fa-save"></i> Salvar Rascunho
+            </button>
+            <button class="btn-primary" id="btnSaveAndPreview">
+              <i class="fas fa-eye"></i> Salvar e Gerar Card
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== My Records ====== -->
+      <section id="user-records" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-list"></i> Meus Registros</h1>
+          <button class="btn-primary" onclick="App.navigate('user-new-record')">
+            <i class="fas fa-plus"></i> Novo
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="myRecordsSearch" placeholder="Buscar meus registros..." oninput="User.filterMyRecords(this.value)" />
+            </div>
+          </div>
+          <div id="myRecordsContainer" class="table-wrapper"></div>
+        </div>
+      </section>
+
+      <!-- ====== My Cards ====== -->
+      <section id="user-cards" class="content-section">
+        <div class="page-header">
+          <h1><i class="fas fa-images"></i> Meus Cards</h1>
+          <span class="page-subtitle">Cards disponíveis para download</span>
+        </div>
+        <div id="myCardsGrid" class="gallery-grid"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ========== CARD PREVIEW MODAL ========== -->
+<div id="cardModal" class="modal hidden">
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal-content card-modal-content">
+    <div class="modal-header">
+      <h2><i class="fas fa-image"></i> Pré-visualização do Card</h2>
+      <div class="modal-header-actions">
+        <button class="btn-icon modal-close" id="btnCloseModal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="card-preview-wrapper">
+        <div id="cardCanvas" class="card-canvas">
+          <!-- Card rendered here by CardGenerator -->
+        </div>
+      </div>
+      <div class="card-actions" id="cardModalActions">
+        <button class="btn-secondary" id="btnEditRecord" data-admin-only>
+          <i class="fas fa-edit"></i> Editar Dados
+        </button>
+        <button class="btn-primary" id="btnDownloadCard">
+          <i class="fas fa-download"></i> Baixar PNG
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TEMPLATE MODAL ========== -->
+<div id="templateModal" class="modal hidden">
+  <div class="modal-overlay" onclick="TemplatesManager.closeModal()"></div>
+  <div class="modal-content modal-xl">
+    <div class="modal-header">
+      <h2 id="templateModalTitle"><i class="fas fa-plus"></i> Novo Template de Card</h2>
+      <button class="btn-icon modal-close" onclick="TemplatesManager.closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body template-modal-body">
+
+      <!-- Lado esquerdo: formulário -->
+      <div class="template-form-col">
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-tag"></i> Identificação</h4>
+          <div class="form-group">
+            <label>Nome do Template *</label>
+            <input type="text" id="tplName" placeholder="Ex: Stine Clássico Verde" />
+          </div>
+          <div class="form-group">
+            <label>Descrição</label>
+            <textarea id="tplDescription" rows="2" placeholder="Descreva quando usar este template..."></textarea>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Tipo de Layout</label>
+              <select id="tplLayoutType">
+                <option value="classic">Clássico</option>
+                <option value="dark">Dark Premium</option>
+                <option value="panoramic">Panorâmico</option>
+                <option value="ranking">Ranking / Campeão</option>
+                <option value="minimal">Minimalista</option>
+                <option value="bold">Negrito / Impactante</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ordem de Exibição</label>
+              <input type="number" id="tplSortOrder" value="1" min="1" max="99" />
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-paint-brush"></i> Cores & Identidade Visual</h4>
+          <div class="form-group">
+            <label>Cor Principal do Header</label>
+            <div class="color-pick-row">
+              <input type="color" id="tplHeaderColor" value="#2E7D32" />
+              <span id="tplHeaderColorHex">#2E7D32</span>
+              <div class="color-presets">
+                <button type="button" class="color-preset" style="background:#2E7D32" onclick="document.getElementById('tplHeaderColor').value='#2E7D32';document.getElementById('tplHeaderColorHex').textContent='#2E7D32';TemplatesManager.updatePreview()">Verde</button>
+                <button type="button" class="color-preset" style="background:#1B5E20" onclick="document.getElementById('tplHeaderColor').value='#1B5E20';document.getElementById('tplHeaderColorHex').textContent='#1B5E20';TemplatesManager.updatePreview()">Dark</button>
+                <button type="button" class="color-preset" style="background:#E65100" onclick="document.getElementById('tplHeaderColor').value='#E65100';document.getElementById('tplHeaderColorHex').textContent='#E65100';TemplatesManager.updatePreview()">Laranja</button>
+                <button type="button" class="color-preset" style="background:#0D47A1" onclick="document.getElementById('tplHeaderColor').value='#0D47A1';document.getElementById('tplHeaderColorHex').textContent='#0D47A1';TemplatesManager.updatePreview()">Azul</button>
+                <button type="button" class="color-preset" style="background:#F57F17" onclick="document.getElementById('tplHeaderColor').value='#F57F17';document.getElementById('tplHeaderColorHex').textContent='#F57F17';TemplatesManager.updatePreview()">Ouro</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-font"></i> Textos do Card</h4>
+          <div class="form-group">
+            <label>Texto do Header (topo)</label>
+            <input type="text" id="tplHeaderText" placeholder="Ex: RESULTADOS DE PRODUTIVIDADE" />
+          </div>
+          <div class="form-group">
+            <label>Slogan (rodapé)</label>
+            <input type="text" id="tplSlogan" placeholder="Ex: NÃO É SORTE! É STINE" />
+          </div>
+          <div class="form-group">
+            <label>Logo / Marca no Rodapé</label>
+            <input type="text" id="tplFooterLogoText" placeholder="Ex: STINE" />
+          </div>
+          <div class="form-group">
+            <label>Texto do Badge (observação)</label>
+            <input type="text" id="tplBadgeLabel" placeholder="Ex: 🏆 MELHOR DO MUNICÍPIO" />
+          </div>
+        </div>
+
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-image"></i> Imagem de Fundo</h4>
+          <div class="form-group">
+            <label>URL da Imagem de Fundo</label>
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <input type="url" id="tplBgImageUrl" placeholder="https://images.unsplash.com/..." style="flex:1" />
+              <button type="button" class="btn-secondary btn-sm" onclick="FileImporter.openModal()" title="Importar do computador">
+                <i class="fas fa-upload"></i> Arquivo
+              </button>
+            </div>
+            <small class="form-hint">Cole uma URL <strong>ou</strong> clique em <strong>Arquivo</strong> para importar do PPTX/PDF</small>
+          </div>
+          <div class="bg-presets">
+            <p class="form-hint" style="margin-bottom:6px"><i class="fas fa-th"></i> Backgrounds pré-definidos:</p>
+            <div class="bg-preset-grid">
+              <div class="bg-preset-item" onclick="TemplatesManager.setBg('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&q=80')" style="background-image:url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=200&q=60')">
+                <span>Soja 1</span>
+              </div>
+              <div class="bg-preset-item" onclick="TemplatesManager.setBg('https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=600&q=80')" style="background-image:url('https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=200&q=60')">
+                <span>Soja 2</span>
+              </div>
+              <div class="bg-preset-item" onclick="TemplatesManager.setBg('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80')" style="background-image:url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200&q=60')">
+                <span>Campo</span>
+              </div>
+              <div class="bg-preset-item" onclick="TemplatesManager.setBg('https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&q=80')" style="background-image:url('https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=200&q=60')">
+                <span>Lavoura</span>
+              </div>
+              <div class="bg-preset-item" onclick="TemplatesManager.setBg('https://images.unsplash.com/photo-1589923188900-85dae523342b?w=600&q=80')" style="background-image:url('https://images.unsplash.com/photo-1589923188900-85dae523342b?w=200&q=60')">
+                <span>Colheita</span>
+              </div>
+              <div class="bg-preset-item" onclick="TemplatesManager.setBg('https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=600&q=80')" style="background-image:url('https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=200&q=60')">
+                <span>Grãos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-cog"></i> Opções Avançadas</h4>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="tplShowRanking" />
+              <span>Exibir badge/medalha de ranking no card</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="tplActive" />
+              <span>Definir como template ativo (padrão)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="TemplatesManager.closeModal()">Cancelar</button>
+          <button class="btn-primary" onclick="TemplatesManager.saveTemplate()">
+            <i class="fas fa-save"></i> Salvar Template
+          </button>
+        </div>
+      </div>
+
+      <!-- Lado direito: preview do card -->
+      <div class="template-preview-col">
+        <div class="tpl-preview-header">
+          <i class="fas fa-eye"></i> Pré-visualização em tempo real
+        </div>
+        <div id="tplLivePreview" class="tpl-live-preview">
+          <!-- Preview gerado pelo TemplatesManager.updatePreview() -->
+        </div>
+        <p class="tpl-preview-hint">A pré-visualização atualiza conforme você edita os campos ao lado</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== FILE IMPORT MODAL ========== -->
+<div id="importFileModal" class="modal hidden">
+  <div class="modal-overlay" onclick="FileImporter.closeModal()"></div>
+  <div class="modal-content modal-import">
+    <div class="modal-header">
+      <h2><i class="fas fa-file-import"></i> Importar Modelo de Card</h2>
+      <button class="btn-icon modal-close" onclick="FileImporter.closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Info da área -->
+      <div class="import-format-info">
+        <div class="import-format-badge">
+          <i class="fas fa-file-powerpoint"></i>
+          <span>PPTX</span>
+        </div>
+        <div class="import-format-badge">
+          <i class="fas fa-file-pdf"></i>
+          <span>PDF</span>
+        </div>
+        <p>Carregue seu arquivo de apresentação. Cada slide/página poderá ser usado como fundo de um template de card.</p>
+      </div>
+
+      <!-- File info label -->
+      <div id="importFileInfo" class="import-file-info"></div>
+
+      <!-- Dropzone -->
+      <div id="importDropzone" class="import-dropzone" onclick="document.getElementById('importFileInput').click()">
+        <input type="file" id="importFileInput" accept=".pptx,.pdf" style="display:none"
+          onchange="FileImporter.handleFile(this.files[0])" />
+        <div class="dropzone-icon">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <div class="dropzone-title">Arraste seu arquivo aqui</div>
+        <div class="dropzone-sub">ou clique para selecionar do computador</div>
+        <div class="dropzone-formats">
+          <span><i class="fas fa-file-powerpoint"></i> .pptx</span>
+          <span><i class="fas fa-file-pdf"></i> .pdf</span>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div id="importProgress" class="import-progress" style="display:none">
+        <div class="import-progress-spinner"><span class="loading"></span></div>
+        <span id="importProgressText">Processando arquivo...</span>
+      </div>
+
+      <!-- Slides Grid -->
+      <div id="importSlidesArea" style="display:none">
+        <div class="import-slides-header">
+          <span id="importSlidesInfo" class="import-slides-info"></span>
+        </div>
+        <div id="importSlidesGrid" class="import-slides-grid"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div id="importActionArea" class="import-action-area" style="display:none">
+        <button class="btn-secondary" onclick="FileImporter._resetUI()">
+          <i class="fas fa-redo"></i> Trocar Arquivo
+        </button>
+        <button class="btn-secondary" id="btnUseAllSlides" onclick="FileImporter.useAllAsSeparate()">
+          <i class="fas fa-layer-group"></i> Criar Todos como Templates
+        </button>
+        <button class="btn-primary" id="btnUseSelectedSlide" disabled onclick="FileImporter.useSelected()">
+          <i class="fas fa-check"></i> Usar Selecionado como Fundo
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== VARIETY MODAL ========== -->
+<div id="varietyModal" class="modal hidden">
+  <div class="modal-overlay" onclick="App.closeVarietyModal()"></div>
+  <div class="modal-content modal-variety">
+    <div class="modal-header">
+      <h2 id="varietyModalTitle"><i class="fas fa-leaf"></i> Nova Variedade</h2>
+      <button class="btn-icon modal-close" onclick="App.closeVarietyModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body variety-modal-body">
+
+      <!-- COLUNA ESQUERDA: dados da variedade -->
+      <div class="variety-form-col">
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-leaf"></i> Dados da Variedade</h4>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Nome / Código da Variedade *</label>
+              <input type="text" id="varName" placeholder="Ex: 79KA72" />
+            </div>
+            <div class="form-group">
+              <label>Marca *</label>
+              <input type="text" id="varBrand" placeholder="Ex: STINE" />
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Tecnologia</label>
+              <input type="text" id="varTechnology" placeholder="Ex: Conkesta E3" />
+            </div>
+            <div class="form-group">
+              <label>Cultura *</label>
+              <input type="text" id="varCulture" placeholder="Ex: Soja" />
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Grupo de Maturidade</label>
+              <input type="text" id="varMaturity" placeholder="Ex: 7.9" />
+            </div>
+            <div class="form-group">
+              <label>Cor Principal (dados dinâmicos)</label>
+              <div class="color-pick-row">
+                <input type="color" id="varColor" value="#2E7D32" />
+                <span id="varColorHex">#2E7D32</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Descrição / Observações</label>
+            <textarea id="varDescription" rows="2" placeholder="Características principais da variedade..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUNA DIREITA: upload do modelo -->
+      <div class="variety-template-col">
+        <div class="tpl-form-section">
+          <h4 class="tpl-section-title"><i class="fas fa-file-image"></i> Modelo de Card</h4>
+          <p class="form-hint" style="margin-bottom:12px">
+            Faça o upload do <strong>PPTX do card</strong> desta variedade (já com logo e layout prontos).<br>
+            Os placeholders <code>{{campo}}</code> nos textos serão detectados automaticamente.<br>
+            Suporte também a <strong>PNG, JPG, PDF</strong>.
+          </p>
+
+          <!-- Dropzone -->
+          <div id="varTemplateDropzone" class="var-tpl-dropzone"
+            onclick="document.getElementById('varTemplateFileInput').click()"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')"
+            ondrop="event.preventDefault();this.classList.remove('dragover');Admin.handleTemplateFile(event.dataTransfer.files[0])">
+            <input type="file" id="varTemplateFileInput" accept=".png,.jpg,.jpeg,.webp,.pdf,.pptx"
+              style="display:none" onchange="Admin.handleTemplateFile(this.files[0])" />
+            <div class="var-tpl-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+            <div class="var-tpl-dropzone-title">Arraste o modelo aqui</div>
+            <div class="var-tpl-dropzone-sub">ou clique para selecionar</div>
+            <div class="dropzone-formats">
+              <span><i class="fas fa-file-image"></i> PNG/JPG</span>
+              <span><i class="fas fa-file-pdf"></i> PDF</span>
+              <span><i class="fas fa-file-powerpoint"></i> PPTX</span>
+            </div>
+          </div>
+
+          <!-- Preview da imagem carregada -->
+          <div id="varTemplatePreview" class="var-tpl-preview" style="display:none">
+            <img src="" alt="Modelo do card" />
+            <div class="var-tpl-preview-actions">
+              <span class="var-tpl-label"></span>
+              <button type="button" class="btn-secondary btn-sm" onclick="Admin._resetTemplateUpload()">
+                <i class="fas fa-redo"></i> Trocar
+              </button>
+            </div>
+          </div>
+
+          <div id="varTemplateStatus" class="var-tpl-status"></div>
+
+          <div id="varLogoPreview" style="display:none;margin-top:10px;padding:10px;background:rgba(0,0,0,.3);border-radius:6px;text-align:center">
+            <div style="font-size:11px;color:#aaa;margin-bottom:6px">
+              <i class="fas fa-image"></i> Logo extraído do PPTX
+            </div>
+            <img id="varLogoPreviewImg" src="" alt="Logo extraído"
+              style="max-height:80px;max-width:100%;object-fit:contain;border-radius:4px" />
+          </div>
+
+          <div class="var-tpl-hint">
+            <i class="fas fa-info-circle"></i>
+            Placeholders suportados no PPTX:
+            <strong>{{data_plantio}}</strong>, <strong>{{data_colheita}}</strong>,
+            <strong>{{produtividade_int}}</strong>, <strong>{{produtividade_dec}}</strong>,
+            <strong>{{unidade}}</strong>, <strong>{{cidade_estado}}</strong>,
+            <strong>{{produtor}}</strong>, <strong>{{area}}</strong>.
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <input type="hidden" id="varLogoUrl" />
+          <button class="btn-secondary" onclick="App.closeVarietyModal()">Cancelar</button>
+          <button class="btn-primary" id="btnSaveVariety">
+            <i class="fas fa-save"></i> Salvar Variedade
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== CALIBRATOR MODAL ========== -->
+<div id="calibratorModal" class="modal hidden">
+  <div class="modal-overlay" onclick="CardGenerator.closeCalibrator()"></div>
+  <div class="modal-content modal-calibrator">
+    <div class="modal-header">
+      <h2><i class="fas fa-crosshairs"></i> Calibrar Posições dos Campos</h2>
+      <button class="btn-icon modal-close" onclick="CardGenerator.closeCalibrator()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="calib-instructions">
+      <i class="fas fa-info-circle"></i>
+      <strong>Como calibrar:</strong>
+      Selecione um campo na lista à esquerda, depois clique na posição exata na imagem onde o dado deve aparecer.
+      Clique em um pin já existente para reposicioná-lo.
+    </div>
+
+    <div class="calib-body">
+
+      <!-- Painel esquerdo: lista de campos -->
+      <div class="calib-fields-panel">
+        <div class="calib-panel-title">
+          <i class="fas fa-list"></i> Campos Dinâmicos
+        </div>
+        <div id="calibFieldBtns" class="calib-field-list">
+          <!-- Gerado por CardGenerator._initCalibrator() -->
+        </div>
+        <div id="calibHint" class="calib-hint">
+          Selecione um campo para começar.
+        </div>
+        <div class="calib-actions">
+          <button class="btn-secondary btn-sm" onclick="CardGenerator.resetCalibration()" title="Restaurar posições padrão">
+            <i class="fas fa-undo"></i> Redefinir
+          </button>
+          <button class="btn-primary" onclick="CardGenerator.saveCalibration()">
+            <i class="fas fa-save"></i> Salvar Calibração
+          </button>
+        </div>
+      </div>
+
+      <!-- Painel direito: imagem clicável -->
+      <div class="calib-image-panel">
+        <div class="calib-image-title">
+          <i class="fas fa-mouse-pointer"></i> Clique na imagem para posicionar o campo selecionado
+        </div>
+        <div id="calibratorImgWrapper" class="calib-img-wrapper">
+          <img id="calibratorImg" src="" alt="Modelo do card" />
+          <!-- Pins são inseridos aqui por JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== PPTX STUDIO MODAL ========== -->
+<div id="pptxStudioModal" class="modal hidden">
+  <div class="modal-overlay" onclick="PptxStudio.closeModal()"></div>
+  <div class="modal-content modal-studio">
+    <div class="modal-header">
+      <h2><i class="fas fa-magic"></i> PPTX Card Studio</h2>
+      <button class="btn-icon modal-close" onclick="PptxStudio.closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body studio-modal-body">
+
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step-dot active" data-step="1">
+          <span class="step-num">1</span>
+          <span class="step-label">Upload</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="2">
+          <span class="step-num">2</span>
+          <span class="step-label">Mapeamento</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="3">
+          <span class="step-num">3</span>
+          <span class="step-label">Dados</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="4">
+          <span class="step-num">4</span>
+          <span class="step-label">Exportar</span>
+        </div>
+      </div>
+
+      <!-- ── STEP 1: Upload & Slide Selection ── -->
+      <div id="studioStep1" class="studio-step active">
+        <h3 class="studio-step-title">
+          <span class="step-badge">1</span> Selecione o Template PPTX
+        </h3>
+        <p class="studio-step-desc">
+          Faça upload do arquivo PPTX com placeholders <code>{{campo}}</code> nos textos.
+          Suporte também a PDF.
+        </p>
+
+        <!-- Drop Zone -->
+        <div id="studioDropzone" class="studio-dropzone"
+          onclick="document.getElementById('studioFileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="event.preventDefault();this.classList.remove('dragover');PptxStudio.handleUpload(event.dataTransfer.files[0])">
+          <input type="file" id="studioFileInput" accept=".pptx,.pdf" style="display:none"
+            onchange="PptxStudio.handleUpload(this.files[0])" />
+          <div class="studio-dropzone-icon"><i class="fas fa-file-powerpoint"></i></div>
+          <div class="studio-dropzone-title">Arraste seu PPTX aqui</div>
+          <div class="studio-dropzone-sub">ou clique para selecionar</div>
+          <div class="dropzone-formats">
+            <span><i class="fas fa-file-powerpoint"></i> .pptx</span>
+            <span><i class="fas fa-file-pdf"></i> .pdf</span>
+          </div>
+        </div>
+
+        <!-- Parse Progress -->
+        <div id="studioParseProgress" style="display:none" class="studio-parse-progress">
+          <span class="loading"></span>
+          <span id="studioParseStatus">Processando...</span>
+        </div>
+
+        <!-- Slides area -->
+        <div id="studioSlidesArea" style="display:none">
+          <!-- Placeholder summary -->
+          <div id="studioPhSummary" class="studio-ph-summary"></div>
+          <!-- Slides grid -->
+          <div class="studio-slides-label">Selecione o slide a usar como template:</div>
+          <div id="studioSlidesGrid" class="studio-slides-grid"></div>
+        </div>
+
+        <div class="studio-step-actions">
+          <button class="btn-secondary" onclick="PptxStudio.closeModal()">Cancelar</button>
+          <button class="btn-primary" id="studioNextStep1" disabled onclick="PptxStudio.proceedToMapping()">
+            Próximo: Mapeamento <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Placeholder Mapping ── -->
+      <div id="studioStep2" class="studio-step">
+        <h3 class="studio-step-title">
+          <span class="step-badge">2</span> Mapeamento de Placeholders
+        </h3>
+        <p class="studio-step-desc">
+          Confirme ou ajuste como cada placeholder do PPTX é mapeado aos campos de dado.
+        </p>
+
+        <div id="studioMappingContainer" class="studio-mapping-container">
+          <!-- gerado por PptxStudio._buildMappingUI() -->
+        </div>
+
+        <div class="studio-step-actions">
+          <button class="btn-secondary" onclick="PptxStudio._setStep(1)">
+            <i class="fas fa-arrow-left"></i> Voltar
+          </button>
+          <button class="btn-primary" onclick="PptxStudio.proceedToData()">
+            Próximo: Dados <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Data Entry ── -->
+      <div id="studioStep3" class="studio-step">
+        <h3 class="studio-step-title">
+          <span class="step-badge">3</span> Inserir Dados
+        </h3>
+
+        <!-- Tabs: Single / Batch -->
+        <div class="studio-data-tabs">
+          <button class="studio-data-tab active" data-tab="single"
+            onclick="this.closest('.studio-data-tabs').querySelectorAll('.studio-data-tab').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('studioDataSingle').style.display='';document.getElementById('studioDataBatch').style.display='none'">
+            <i class="fas fa-user"></i> Entrada Manual
+          </button>
+          <button class="studio-data-tab" data-tab="batch"
+            onclick="this.closest('.studio-data-tabs').querySelectorAll('.studio-data-tab').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('studioDataSingle').style.display='none';document.getElementById('studioDataBatch').style.display=''">
+            <i class="fas fa-table"></i> Planilha em Lote
+          </button>
+        </div>
+
+        <!-- Single entry -->
+        <div id="studioDataSingle">
+          <div id="studioDataForm" class="studio-data-form">
+            <!-- gerado por PptxStudio._buildDataEntryUI() -->
+          </div>
+        </div>
+
+        <!-- Batch CSV/Excel -->
+        <div id="studioDataBatch" style="display:none">
+          <div class="batch-upload-area">
+            <div class="batch-dropzone"
+              onclick="document.getElementById('batchFileInput').click()"
+              ondragover="event.preventDefault();this.classList.add('dragover')"
+              ondragleave="this.classList.remove('dragover')"
+              ondrop="event.preventDefault();this.classList.remove('dragover');PptxStudio.handleCsvUpload(event.dataTransfer.files[0])">
+              <input type="file" id="batchFileInput" accept=".csv,.xlsx,.xls" style="display:none"
+                onchange="PptxStudio.handleCsvUpload(this.files[0])" />
+              <i class="fas fa-file-excel"></i>
+              <span>Arraste CSV ou Excel aqui</span>
+              <small>Colunas: produtividade, fazenda, produtor, cidade, estado, variedade...</small>
+            </div>
+
+            <div class="batch-hint">
+              <button class="btn-sm btn-secondary" onclick="PptxStudio.downloadCsvTemplate()">
+                <i class="fas fa-download"></i> Baixar modelo CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- CSV preview table -->
+          <div id="studioCsvPreview"></div>
+        </div>
+
+        <div class="studio-step-actions">
+          <button class="btn-secondary" onclick="PptxStudio._setStep(2)">
+            <i class="fas fa-arrow-left"></i> Voltar
+          </button>
+          <button class="btn-primary" onclick="PptxStudio.proceedToPreview()">
+            Próximo: Preview <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Preview & Export ── -->
+      <div id="studioStep4" class="studio-step">
+        <h3 class="studio-step-title">
+          <span class="step-badge">4</span> Preview e Exportação
+        </h3>
+
+        <div class="studio-preview-export">
+
+          <!-- Left: Preview -->
+          <div class="studio-preview-col">
+            <div class="studio-preview-label">
+              <i class="fas fa-eye"></i> Preview em tempo real
+              <button class="btn-sm btn-secondary" style="margin-left:auto" onclick="PptxStudio.renderPreview()">
+                <i class="fas fa-sync"></i> Atualizar
+              </button>
+            </div>
+            <div class="studio-preview-frame">
+              <canvas id="studioPreviewCanvas" class="studio-preview-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Right: Export controls -->
+          <div class="studio-export-col">
+            <div class="export-section">
+              <h4><i class="fas fa-file-image"></i> Card Único</h4>
+              <p class="export-desc">Exporta o card com os dados do formulário em alta resolução (≥300 DPI equivalente).</p>
+              <div class="export-format-row">
+                <button class="btn-export" id="btnStudioGenerate"
+                  onclick="PptxStudio.generateSingle('png')">
+                  <i class="fas fa-image"></i>
+                  <span>PNG</span>
+                  <small>Alta qualidade</small>
+                </button>
+                <button class="btn-export"
+                  onclick="PptxStudio.generateSingle('jpeg')">
+                  <i class="fas fa-file-image"></i>
+                  <span>JPEG</span>
+                  <small>Menor tamanho</small>
+                </button>
+                <button class="btn-export"
+                  onclick="PptxStudio.generateSingle('pdf')">
+                  <i class="fas fa-file-pdf"></i>
+                  <span>PDF</span>
+                  <small>Imprimível</small>
+                </button>
+              </div>
+            </div>
+
+            <div class="export-section">
+              <h4><i class="fas fa-layer-group"></i> Geração em Lote</h4>
+              <p class="export-desc">Gera um card para cada linha da planilha e exporta todos em ZIP.</p>
+              <div id="batchProgressArea" style="display:none" class="batch-progress-area">
+                <div class="batch-progress-bar-wrap">
+                  <div id="batchProgressBar" class="batch-progress-bar" style="width:0%"></div>
+                </div>
+                <span id="batchProgressText" class="batch-progress-text">Processando...</span>
+              </div>
+              <button class="btn-primary btn-full" id="btnBatchGenerate"
+                onclick="PptxStudio.generateBatch()">
+                <i class="fas fa-layer-group"></i> Gerar Todos e Baixar ZIP
+              </button>
+              <small class="export-hint">Requer planilha carregada na aba "Planilha em Lote" (Passo 3)</small>
+            </div>
+
+            <div class="export-section">
+              <h4><i class="fas fa-cog"></i> Configurações</h4>
+              <div class="export-config">
+                <label class="config-label">Overflow de texto:</label>
+                <select onchange="PptxStudio._overflowMode=this.value" class="config-select">
+                  <option value="shrink">Reduzir fonte</option>
+                  <option value="truncate">Truncar com ...</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="studio-step-actions" style="margin-top:auto">
+              <button class="btn-secondary" onclick="PptxStudio._setStep(3)">
+                <i class="fas fa-arrow-left"></i> Editar Dados
+              </button>
+              <button class="btn-secondary" onclick="PptxStudio.closeModal()">
+                <i class="fas fa-check"></i> Concluir
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- end step 4 -->
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== CONFIRM MODAL ========== -->
+<div id="confirmModal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-content modal-sm">
+    <div class="modal-header">
+      <h2 id="confirmTitle"><i class="fas fa-exclamation-triangle"></i> Confirmar</h2>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMessage">Deseja realmente executar esta ação?</p>
+      <div class="form-actions">
+        <button class="btn-secondary" id="btnConfirmCancel">Cancelar</button>
+        <button class="btn-danger" id="btnConfirmOk">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TOAST ========== -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/card-renderer.js?v=20260323p"></script>
+<script src="js/card.js?v=20260323p"></script>
+<script src="js/onedrive.js?v=20260323n"></script>
+<script src="js/access-control.js?v=20260323n"></script>
+<script src="js/admin.js?v=20260323n"></script>
+<script src="js/user.js?v=20260323n"></script>
+<script src="js/templates.js?v=20260323n"></script>
+<script src="js/fileimport.js?v=20260323n"></script>
+<script src="js/settings.js?v=20260323n"></script>
+<script src="js/pptx-studio.js?v=20260323o"></script>
+<script src="js/pptx-engine.js?v=20260323o"></script>
+<script src="js/app.js?v=20260323o"></script>
+</body>
+</html>
