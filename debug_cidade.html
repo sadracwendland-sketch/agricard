@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug cidade/estado</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+async function run() {
+  const resp = await fetch('uploads/78KA42_v2.pptx');
+  const ab   = await resp.arrayBuffer();
+  const zip  = await JSZip.loadAsync(ab);
+
+  // Layout do slide1
+  const s1Rels  = await zip.file('ppt/slides/_rels/slide1.xml.rels')?.async('text') || '';
+  const layoutM = s1Rels.match(/Type="[^"]*slideLayout"[^>]*Target="([^"]+)"/);
+  const layoutFile = layoutM ? layoutM[1].replace(/^\.\.\//, 'ppt/') : 'ppt/slideLayouts/slideLayout1.xml';
+  const layoutXml  = await zip.file(layoutFile)?.async('text') || '';
+
+  console.log('Layout: ' + layoutFile);
+
+  // Busca todos os shapes com {{
+  const doc = new DOMParser().parseFromString(layoutXml, 'text/xml');
+  const sps = Array.from(doc.getElementsByTagNameNS('*', 'sp'));
+
+  for (const sp of sps) {
+    const cNvPr = sp.getElementsByTagNameNS('*', 'cNvPr')[0];
+    const name  = cNvPr?.getAttribute('name') || '';
+    if (!name.includes('{{')) continue;
+
+    console.log('\n=== Shape: ' + name + ' ===');
+
+    // txBody completo
+    const txBody = sp.getElementsByTagNameNS('*', 'txBody')[0];
+    if (txBody) {
+      console.log('txBody XML:');
+      console.log(new XMLSerializer().serializeToString(txBody));
+    }
+
+    // lstStyle
+    const lstStyle = sp.getElementsByTagNameNS('*', 'lstStyle')[0];
+    if (lstStyle) {
+      console.log('lstStyle XML:');
+      console.log(new XMLSerializer().serializeToString(lstStyle));
+    }
+
+    // spPr
+    const spPr = sp.getElementsByTagNameNS('*', 'spPr')[0];
+    if (spPr) {
+      console.log('spPr XML:');
+      console.log(new XMLSerializer().serializeToString(spPr));
+    }
+  }
+
+  console.log('DONE');
+}
+run().catch(e => console.error('ERRO: ' + e.message));
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug layout7</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+function blobToDataUrl(blob) {
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(blob);});
+}
+function loadImage(src) {
+  return new Promise((res,rej)=>{const img=new Image();img.onload=()=>res(img);img.onerror=()=>rej(new Error('fail'));img.src=src;});
+}
+
+async function run() {
+  const resp = await fetch('uploads/78KA42.pptx');
+  const ab   = await resp.arrayBuffer();
+  const zip  = await JSZip.loadAsync(ab);
+
+  const slideW = 6858000, slideH = 12193588;
+
+  // Dados do layout7 (o layout do slide1)
+  const layoutXml  = await zip.file('ppt/slideLayouts/slideLayout7.xml').async('text');
+  const layoutRels = await zip.file('ppt/slideLayouts/_rels/slideLayout7.xml.rels').async('text');
+  const masterXml  = await zip.file('ppt/slideMasters/slideMaster1.xml').async('text');
+  const masterRels = await zip.file('ppt/slideMasters/_rels/slideMaster1.xml.rels').async('text');
+
+  // Extrai imagens
+  function getRIdMap(rels) {
+    const map = {};
+    for (const r of [...rels.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/gi)]) {
+      map[r[1]] = r[2];
+    }
+    return map;
+  }
+
+  const layoutRIdMap = getRIdMap(layoutRels);
+  const masterRIdMap = getRIdMap(masterRels);
+
+  console.log('=== Layout7 rels ===');
+  for (const [k,v] of Object.entries(layoutRIdMap)) console.log('  '+k+' -> '+v);
+  console.log('=== Master rels (imagens) ===');
+  for (const [k,v] of Object.entries(masterRIdMap)) {
+    if (v.includes('media') || v.includes('image')) console.log('  '+k+' -> '+v);
+  }
+
+  // Extrai pics
+  function extractPics(xml) {
+    const doc = new DOMParser().parseFromString(xml,'text/xml');
+    return Array.from(doc.getElementsByTagNameNS('*','pic')).map(pic=>{
+      const spPr=pic.getElementsByTagNameNS('*','spPr')[0];
+      const xfrm=spPr?.getElementsByTagNameNS('*','xfrm')[0];
+      const off=xfrm?.getElementsByTagNameNS('*','off')[0];
+      const ext=xfrm?.getElementsByTagNameNS('*','ext')[0];
+      const blip=pic.getElementsByTagNameNS('*','blip')[0];
+      let rId='';if(blip)for(const a of Array.from(blip.attributes))if(a.localName==='embed'){rId=a.value;break;}
+      return {rId, x:parseInt(off?.getAttribute('x')||0), y:parseInt(off?.getAttribute('y')||0),
+              cx:parseInt(ext?.getAttribute('cx')||0), cy:parseInt(ext?.getAttribute('cy')||0)};
+    });
+  }
+
+  const layoutPics = extractPics(layoutXml);
+  const masterPics = extractPics(masterXml);
+
+  console.log('=== PICs layout7 ===');
+  for (const p of layoutPics) {
+    const fname = layoutRIdMap[p.rId] || '?';
+    const realFname = fname.replace('../','ppt/');
+    const xPct=(p.x/slideW*100).toFixed(1), yPct=(p.y/slideH*100).toFixed(1);
+    const wPct=(p.cx/slideW*100).toFixed(1), hPct=(p.cy/slideH*100).toFixed(1);
+    console.log(`  rId=${p.rId} file=${fname} x=${p.x}(${xPct}%) y=${p.y}(${yPct}%) cx=${p.cx}(${wPct}%) cy=${p.cy}(${hPct}%)`);
+    // Carrega e exibe
+    const f = zip.file(realFname.startsWith('ppt/') ? realFname : 'ppt/media/'+realFname.split('/').pop());
+    if (f) {
+      const blob = await f.async('blob');
+      const du = await blobToDataUrl(blob);
+      console.log('  tamanho=' + (blob.size/1024).toFixed(0) + 'KB');
+      const img = document.createElement('img');
+      img.src = du; img.style.maxWidth='200px'; img.style.border='2px solid green';
+      document.body.appendChild(document.createTextNode('Logo layout7 ('+wPct+'% x '+hPct+'%): '));
+      document.body.appendChild(img);
+      document.body.appendChild(document.createElement('br'));
+    }
+  }
+
+  console.log('=== PICs master ===');
+  for (const p of masterPics) {
+    const fname = masterRIdMap[p.rId] || '?';
+    const xPct=(p.x/slideW*100).toFixed(1), wPct=(p.cx/slideW*100).toFixed(1);
+    console.log(`  rId=${p.rId} file=${fname} x%=${xPct} w%=${wPct}`);
+  }
+
+  // Renderização canvas
+  const W=540, H=Math.round(W*slideH/slideW);
+  const canvas=document.createElement('canvas');
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  // Fundo
+  const bgFname='ppt/media/image1.png';
+  const bgBlob=await zip.file(bgFname).async('blob');
+  const bgDu=await blobToDataUrl(bgBlob);
+  const bgImg=await loadImage(bgDu);
+  ctx.drawImage(bgImg,0,0,W,H);
+
+  // Logo do layout
+  const EMU=914400/96;
+  const sX=W/(slideW/EMU), sY=H/(slideH/EMU);
+  for (const p of layoutPics) {
+    const fname=(layoutRIdMap[p.rId]||'').replace('../','ppt/');
+    const f=zip.file(fname)||zip.file('ppt/media/'+fname.split('/').pop());
+    if(!f) continue;
+    const blob=await f.async('blob');
+    const du=await blobToDataUrl(blob);
+    const img=await loadImage(du);
+    const px=Math.round((p.x/EMU)*sX), py=Math.round((p.y/EMU)*sY);
+    const pw=Math.round((p.cx/EMU)*sX), ph=Math.round((p.cy/EMU)*sY);
+    console.log(`  Desenhando logo: pos=(${px},${py}) size=(${pw}x${ph}) canvas=${W}x${H}`);
+    ctx.drawImage(img,px,py,pw,ph);
+  }
+
+  // Placeholders de texto como boxes
+  function extractSps(xml) {
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    return Array.from(doc.getElementsByTagNameNS('*','sp')).filter(sp=>{
+      const cNvPr=sp.getElementsByTagNameNS('*','cNvPr')[0];
+      return cNvPr?.getAttribute('name')?.includes('{{');
+    }).map(sp=>{
+      const cNvPr=sp.getElementsByTagNameNS('*','cNvPr')[0];
+      const spPr=sp.getElementsByTagNameNS('*','spPr')[0];
+      const xfrm=spPr?.getElementsByTagNameNS('*','xfrm')[0];
+      const off=xfrm?.getElementsByTagNameNS('*','off')[0];
+      const ext=xfrm?.getElementsByTagNameNS('*','ext')[0];
+      return {name:cNvPr.getAttribute('name'),
+              x:parseInt(off?.getAttribute('x')||0), y:parseInt(off?.getAttribute('y')||0),
+              cx:parseInt(ext?.getAttribute('cx')||0), cy:parseInt(ext?.getAttribute('cy')||0)};
+    });
+  }
+  const sps=extractSps(layoutXml);
+  ctx.strokeStyle='rgba(255,50,50,0.8)'; ctx.lineWidth=1;
+  for (const s of sps) {
+    const px=Math.round((s.x/EMU)*sX), py=Math.round((s.y/EMU)*sY);
+    const pw=Math.round((s.cx/EMU)*sX), ph=Math.round((s.cy/EMU)*sY);
+    ctx.strokeRect(px,py,pw,ph);
+    ctx.fillStyle='rgba(255,50,50,0.6)'; ctx.font='7px monospace';
+    ctx.fillText(s.name.replace(/[{}]/g,'').substring(0,16), px+1, py+8);
+  }
+
+  canvas.style.border='2px solid #4fc3f7';
+  canvas.style.display='block';
+  document.body.style.background='#111'; document.body.style.color='#eee';
+  document.body.insertBefore(document.createTextNode('Canvas renderizado (logo+boxes):'), document.body.firstChild);
+  document.body.insertBefore(canvas, document.body.firstChild);
+
+  console.log('DONE');
+}
+run().catch(e=>console.error('ERRO: '+e.message));
+</script>
+</body>
+</html>

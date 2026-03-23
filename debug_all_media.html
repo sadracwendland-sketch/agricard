@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug all media</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+function blobToDataUrl(blob) {
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(blob);});
+}
+
+async function run() {
+  const resp = await fetch('uploads/78KA42.pptx');
+  const ab   = await resp.arrayBuffer();
+  const zip  = await JSZip.loadAsync(ab);
+
+  document.body.style.background='#111';
+  document.body.style.color='#eee';
+  document.body.style.fontFamily='monospace';
+  document.body.style.padding='20px';
+
+  // Mostra TODAS as imagens do media folder
+  const mediaFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/media/')).sort();
+
+  const h1 = document.createElement('h2');
+  h1.style.color='#4fc3f7';
+  h1.textContent = 'Todas as imagens de mídia do PPTX ('+mediaFiles.length+')';
+  document.body.appendChild(h1);
+
+  const grid = document.createElement('div');
+  grid.style.display='flex'; grid.style.flexWrap='wrap'; grid.style.gap='12px';
+  document.body.appendChild(grid);
+
+  for (const mf of mediaFiles) {
+    const f = zip.file(mf);
+    if (!f) continue;
+    const blob = await f.async('blob');
+    const du = await blobToDataUrl(blob);
+    const card = document.createElement('div');
+    card.style.background='#263238'; card.style.padding='8px'; card.style.borderRadius='6px';
+    card.style.textAlign='center'; card.style.minWidth='100px';
+    const img = document.createElement('img');
+    img.src = du; img.style.maxWidth='140px'; img.style.maxHeight='140px'; img.style.display='block'; img.style.margin='0 auto';
+    const label = document.createElement('small');
+    label.style.color='#aaa'; label.style.display='block'; label.style.marginTop='4px';
+    label.textContent = mf.replace('ppt/media/','') + '\n' + (blob.size/1024).toFixed(0) + 'KB';
+    card.appendChild(img); card.appendChild(label);
+    grid.appendChild(card);
+  }
+
+  // Verifica todos os rels para ver quais arquivos NÃO são referenciados
+  console.log('=== Verificando referências de media ===');
+  const allRels = Object.keys(zip.files).filter(f => f.endsWith('.rels'));
+  const referenced = new Set();
+  for (const rf of allRels) {
+    const txt = await zip.file(rf).async('text');
+    for (const m of [...txt.matchAll(/media\/(image\d+\.\w+)/gi)]) {
+      referenced.add('ppt/media/' + m[1]);
+    }
+  }
+  for (const mf of mediaFiles) {
+    if (referenced.has(mf)) {
+      console.log('✅ REFERENCIADA: ' + mf);
+    } else {
+      console.log('❌ NÃO REFERENCIADA: ' + mf);
+    }
+  }
+
+  // Verifica se image6 está nos XMLs de alguma forma diferente
+  const allXmls = Object.keys(zip.files).filter(f => f.endsWith('.xml'));
+  for (const xf of allXmls) {
+    try {
+      const txt = await zip.file(xf).async('text');
+      if (txt.includes('image6')) {
+        console.log('image6 referenciada em: ' + xf);
+      }
+    } catch(e) {}
+  }
+
+  console.log('DONE');
+}
+run().catch(e => console.error('ERRO: '+e.message));
+</script>
+</body>
+</html>

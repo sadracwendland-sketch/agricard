@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>PPTX Analyzer</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  body { font-family: monospace; font-size: 12px; background: #1a1a1a; color: #e0e0e0; padding: 20px; }
+  pre  { background: #111; padding: 12px; border-radius: 6px; overflow: auto; white-space: pre-wrap; }
+  h2   { color: #4CAF50; }
+  h3   { color: #FF9800; }
+  .tag { color: #64B5F6; }
+  .val { color: #A5D6A7; }
+  .ph  { color: #FFD54F; font-weight: bold; background: #333; padding: 2px 4px; border-radius: 3px; }
+  button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 8px 4px; }
+  input[type=file] { color: white; margin: 10px 0; display: block; }
+  .section { background: #222; margin: 10px 0; padding: 12px; border-radius: 8px; border-left: 3px solid #4CAF50; }
+  .shape   { background: #1e2a1e; margin: 6px 0; padding: 8px; border-radius: 4px; border: 1px solid #333; }
+  .placeholder-shape { border: 2px solid #FFD54F !important; background: #2a2a1a !important; }
+</style>
+</head>
+<body>
+<h2>🔍 PPTX Deep Analyzer</h2>
+<input type="file" id="fileInput" accept=".pptx" />
+<button onclick="analyze()">Analisar PPTX</button>
+<button onclick="loadDefault()">Carregar template da pasta (fetch)</button>
+<div id="output"></div>
+
+<script>
+async function loadDefault() {
+  try {
+    const res  = await fetch('uploads/card_template.pptx');
+    const blob = await res.blob();
+    const file = new File([blob], 'card_template.pptx');
+    await processFile(file);
+  } catch(e) {
+    document.getElementById('output').innerHTML = '<pre style="color:red">Erro: ' + e.message + '</pre>';
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) processFile(e.target.files[0]);
+});
+
+async function analyze() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) { alert('Selecione um arquivo'); return; }
+  await processFile(file);
+}
+
+async function processFile(file) {
+  const out = document.getElementById('output');
+  out.innerHTML = '<pre>Processando...</pre>';
+
+  const ab  = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(ab);
+  let html = '';
+
+  // ── Presentation.xml (slide dimensions) ──
+  const presXml = await zip.file('ppt/presentation.xml')?.async('text') || '';
+  const sldSzMatch = presXml.match(/<p:sldSz[^>]+cx="(\d+)"[^>]+cy="(\d+)"/);
+  const slideW = sldSzMatch ? parseInt(sldSzMatch[1]) : 9144000;
+  const slideH = sldSzMatch ? parseInt(sldSzMatch[2]) : 5143500;
+  const slideWpx = Math.round(slideW / 914400 * 96);
+  const slideHpx = Math.round(slideH / 914400 * 96);
+
+  html += `<div class="section"><h2>📐 Dimensões do Slide</h2>
+    <pre>EMU:    ${slideW} × ${slideH}
+Pixels: ${slideWpx} × ${slideHpx}
+Aspect: ${(slideW/slideH).toFixed(4)} (${slideWpx}:${slideHpx})
+Orientação: ${slideH > slideW ? 'PORTRAIT ↕' : 'LANDSCAPE ↔'}</pre></div>`;
+
+  // ── Slide 1 XML ──
+  const slideFiles = Object.keys(zip.files)
+    .filter(f => /^ppt\/slides\/slide\d+\.xml$/.test(f))
+    .sort((a,b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
+
+  html += `<div class="section"><h3>📄 Slides encontrados: ${slideFiles.length}</h3>
+    <pre>${slideFiles.join('\n')}</pre></div>`;
+
+  for (const slidePath of slideFiles.slice(0, 3)) {
+    const slideXml = await zip.file(slidePath)?.async('text') || '';
+    html += analyzeSlide(slideXml, slidePath, slideW, slideH, zip);
+  }
+
+  // ── Media files ──
+  const mediaFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/media/'));
+  html += `<div class="section"><h3>🖼️ Arquivos de Mídia (${mediaFiles.length})</h3>
+    <pre>${mediaFiles.map(f => {
+      const info = zip.files[f];
+      return `${f}`;
+    }).join('\n')}</pre></div>`;
+
+  // ── Full slide 1 XML ──
+  if (slideFiles[0]) {
+    const raw = await zip.file(slideFiles[0])?.async('text') || '';
+    html += `<div class="section"><h3>📝 XML Completo - ${slideFiles[0]}</h3>
+      <pre style="max-height:600px;overflow-y:auto;font-size:10px">${escHtml(raw)}</pre></div>`;
+  }
+
+  out.innerHTML = html;
+}
+
+function analyzeSlide(xml, path, slideW, slideH, zip) {
+  const EMU = 914400 / 96; // EMU per pixel at 96dpi
+  const toNum = v => parseInt(v || 0);
+  let html = `<div class="section"><h2>🎨 Análise: ${path}</h2>`;
+
+  // Background color
+  const bgMatch = xml.match(/<a:solidFill>\s*<a:srgbClr val="([0-9A-Fa-f]{6})"/);
+  const bgColor = bgMatch ? '#' + bgMatch[1] : 'N/A';
+  html += `<div class="shape"><strong>Background Color:</strong> <span class="val">${bgColor}</span></div>`;
+
+  // Parse all shapes with DOMParser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'text/xml');
+
+  const shapes = [];
+
+  // sp elements (text shapes)
+  doc.querySelectorAll('sp').forEach((sp, idx) => {
+    const xfrm = sp.querySelector('spPr xfrm');
+    if (!xfrm) return;
+    const off = xfrm.querySelector('off');
+    const ext = xfrm.querySelector('ext');
+    if (!off || !ext) return;
+
+    const x = toNum(off.getAttribute('x'));
+    const y = toNum(off.getAttribute('y'));
+    const w = toNum(ext.getAttribute('cx'));
+    const h = toNum(ext.getAttribute('cy'));
+    const rot = parseFloat(xfrm.getAttribute('rot') || 0) / 60000;
+
+    const xPct = (x / slideW * 100).toFixed(2);
+    const yPct = (y / slideH * 100).toFixed(2);
+    const wPct = (w / slideW * 100).toFixed(2);
+    const hPct = (h / slideH * 100).toFixed(2);
+    const xPx = Math.round(x / EMU);
+    const yPx = Math.round(y / EMU);
+    const wPx = Math.round(w / EMU);
+    const hPx = Math.round(h / EMU);
+
+    // Text content
+    const tEls = sp.querySelectorAll('a\\:t, t');
+    const rawText = [...tEls].map(t => t.textContent).join('');
+
+    // Run properties
+    const runs = [];
+    sp.querySelectorAll('a\\:r, r').forEach(r => {
+      const t = r.querySelector('a\\:t, t');
+      if (!t || !t.textContent.trim()) return;
+      const rPr = r.querySelector('a\\:rPr, rPr');
+      const sz = rPr?.getAttribute('sz');
+      const b  = rPr?.getAttribute('b');
+      const i  = rPr?.getAttribute('i');
+      const latin = rPr?.querySelector('a\\:latin, latin');
+      const clrEl = rPr?.querySelector('a\\:solidFill a\\:srgbClr, solidFill srgbClr');
+      const schemeClr = rPr?.querySelector('a\\:solidFill a\\:schemeClr, solidFill schemeClr');
+      runs.push({
+        text: t.textContent,
+        sz:   sz ? parseInt(sz)/100 + 'pt' : 'inherited',
+        bold: b === '1',
+        italic: i === '1',
+        font: latin?.getAttribute('typeface') || 'inherited',
+        color: clrEl ? '#' + clrEl.getAttribute('val') : (schemeClr ? 'scheme:' + schemeClr.getAttribute('val') : 'inherited'),
+      });
+    });
+
+    // Paragraph alignment
+    const pPr = sp.querySelector('a\\:pPr, pPr');
+    const algn = pPr?.getAttribute('algn') || 'l';
+    const alignMap = { l:'left', ctr:'center', r:'right', just:'justify' };
+
+    // Shape fill
+    const fillEl = sp.querySelector('spPr solidFill srgbClr, spPr a\\:solidFill a\\:srgbClr');
+    const fillColor = fillEl ? '#' + fillEl.getAttribute('val') : null;
+
+    // Body padding
+    const bodyPr = sp.querySelector('txBody bodyPr, txBody a\\:bodyPr');
+    const lIns = bodyPr?.getAttribute('lIns');
+    const rIns = bodyPr?.getAttribute('rIns');
+    const tIns = bodyPr?.getAttribute('tIns');
+
+    // Placeholder detection
+    const isPlaceholder = /\{\{[\w]+\}\}/.test(rawText);
+
+    const shape = { type:'text', x, y, w, h, rot, rawText, runs, align: alignMap[algn]||'left', fillColor, lIns, rIns, tIns, isPlaceholder, xPx, yPx, wPx, hPx, xPct, yPct, wPct, hPct };
+    shapes.push(shape);
+  });
+
+  // pic elements (images)
+  doc.querySelectorAll('pic').forEach((pic, idx) => {
+    const xfrm = pic.querySelector('spPr xfrm');
+    if (!xfrm) return;
+    const off = xfrm.querySelector('off');
+    const ext = xfrm.querySelector('ext');
+    if (!off || !ext) return;
+    const x = toNum(off.getAttribute('x'));
+    const y = toNum(off.getAttribute('y'));
+    const w = toNum(ext.getAttribute('cx'));
+    const h = toNum(ext.getAttribute('cy'));
+
+    const blip = pic.querySelector('blip');
+    const ns = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const rEmbed = blip?.getAttribute('r:embed') || blip?.getAttributeNS(ns, 'embed');
+
+    const xPx = Math.round(x / EMU); const yPx = Math.round(y / EMU);
+    const wPx = Math.round(w / EMU); const hPx = Math.round(h / EMU);
+
+    shapes.push({ type:'image', x, y, w, h, rEmbed, xPx, yPx, wPx, hPx,
+      xPct: (x/slideW*100).toFixed(2), yPct: (y/slideH*100).toFixed(2),
+      wPct: (w/slideW*100).toFixed(2), hPct: (h/slideH*100).toFixed(2) });
+  });
+
+  // Sort by Y position
+  shapes.sort((a,b) => a.y - b.y);
+
+  // Render shapes
+  shapes.forEach((s, idx) => {
+    const cls = s.isPlaceholder ? 'shape placeholder-shape' : 'shape';
+    if (s.type === 'text') {
+      html += `<div class="${cls}">
+        <strong>[${idx}] TEXT${s.isPlaceholder ? ' ⭐ PLACEHOLDER' : ''}</strong>
+        ${s.rawText ? `<span class="ph">${escHtml(s.rawText.substring(0,120))}</span>` : '<em style="color:#888">(sem texto)</em>'}<br>
+        <span class="tag">Pos:</span> <span class="val">x=${s.xPx}px y=${s.yPx}px w=${s.wPx}px h=${s.hPx}px (${s.xPct}% ${s.yPct}%) rot=${s.rot.toFixed(1)}°</span><br>
+        <span class="tag">Align:</span> <span class="val">${s.align}</span>
+        ${s.fillColor ? `<span class="tag"> Fill:</span> <span class="val" style="background:${s.fillColor};color:white;padding:1px 4px">${s.fillColor}</span>` : ''}
+        ${s.lIns ? `<span class="tag"> Padding:</span> <span class="val">l=${Math.round(parseInt(s.lIns)/EMU/1000*96)}px t=${Math.round(parseInt(s.tIns||0)/EMU/1000*96)}px</span>` : ''}
+        <br>
+        ${s.runs.map(r => `
+          <span style="margin-left:16px;color:#aaa">▸ "<span class="ph">${escHtml(r.text)}</span>"
+          sz=<span class="val">${r.sz}</span>
+          bold=<span class="val">${r.bold}</span>
+          italic=<span class="val">${r.italic}</span>
+          font=<span class="val">${r.font}</span>
+          color=<span class="val" style="background:${r.color.startsWith('#')?r.color:'transparent'};padding:1px 4px">${r.color}</span>
+          </span><br>`).join('')}
+      </div>`;
+    } else {
+      html += `<div class="shape" style="border-color:#64B5F6">
+        <strong>[${idx}] IMAGE</strong> rEmbed=<span class="val">${s.rEmbed || 'N/A'}</span><br>
+        <span class="tag">Pos:</span> <span class="val">x=${s.xPx}px y=${s.yPx}px w=${s.wPx}px h=${s.hPx}px (${s.xPct}% ${s.yPct}%)</span>
+      </div>`;
+    }
+  });
+
+  // Summary of placeholders
+  const phs = shapes.filter(s => s.isPlaceholder);
+  if (phs.length) {
+    html += `<div class="section" style="border-color:#FFD54F"><h3>⭐ Placeholders Encontrados (${phs.length})</h3>`;
+    phs.forEach(ph => {
+      html += `<pre class="ph">${escHtml(ph.rawText)}
+  pos: x=${ph.xPx}px y=${ph.yPx}px w=${ph.wPx}px h=${ph.hPx}px
+  runs: ${JSON.stringify(ph.runs, null, 2)}</pre>`;
+    });
+    html += '</div>';
+  }
+
+  // JSON export for copy-paste
+  const exportData = {
+    slideW, slideH,
+    slideWpx: Math.round(slideW/EMU),
+    slideHpx: Math.round(slideH/EMU),
+    shapes: shapes.map(s => ({
+      type: s.type,
+      placeholder: s.isPlaceholder ? s.rawText.match(/\{\{(\w+)\}\}/)?.[1] : null,
+      rawText: s.rawText,
+      x: s.x, y: s.y, w: s.w, h: s.h,
+      xPx: s.xPx, yPx: s.yPx, wPx: s.wPx, hPx: s.hPx,
+      xPct: parseFloat(s.xPct), yPct: parseFloat(s.yPct),
+      wPct: parseFloat(s.wPct), hPct: parseFloat(s.hPct),
+      align: s.align, fillColor: s.fillColor, rot: s.rot,
+      runs: s.runs, rEmbed: s.rEmbed,
+    }))
+  };
+
+  html += `<div class="section" style="border-color:#CE93D8"><h3>📋 JSON para copiar</h3>
+    <pre style="max-height:400px;overflow-y:auto;font-size:10px">${JSON.stringify(exportData, null, 2)}</pre></div>`;
+
+  html += '</div>';
+  return html;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug tema</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+async function run() {
+  const resp = await fetch('uploads/78KA42_v2.pptx');
+  const ab   = await resp.arrayBuffer();
+  const zip  = await JSZip.loadAsync(ab);
+
+  // Lê o tema
+  const themeXml = await zip.file('ppt/theme/theme1.xml')?.async('text') || '';
+  console.log('=== TEMA XML (primeiros 3000 chars) ===');
+  console.log(themeXml.substring(0, 3000));
+
+  // Extrai mapeamento de cores do tema
+  const doc = new DOMParser().parseFromString(themeXml, 'text/xml');
+
+  // a:clrScheme
+  const clrScheme = doc.getElementsByTagNameNS('*', 'clrScheme')[0];
+  if (clrScheme) {
+    console.log('\n=== Color Scheme ===');
+    const children = Array.from(clrScheme.children);
+    for (const child of children) {
+      const name = child.localName;
+      // pode ser srgbClr, sysClr, etc.
+      const srgb = child.getElementsByTagNameNS('*', 'srgbClr')[0];
+      const sys  = child.getElementsByTagNameNS('*', 'sysClr')[0];
+      if (srgb) {
+        console.log(name + ' = #' + srgb.getAttribute('val'));
+      } else if (sys) {
+        console.log(name + ' = sys:' + sys.getAttribute('lastClr') + ' (lastClr)');
+      } else {
+        console.log(name + ' = ??? ' + new XMLSerializer().serializeToString(child).substring(0,100));
+      }
+    }
+  }
+}
+run().catch(e => console.error('ERRO: ' + e.message));
+</script>
+</body>
+</html>

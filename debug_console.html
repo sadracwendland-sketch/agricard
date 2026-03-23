@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug console</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+function blobToDataUrl(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(blob); });
+}
+
+async function run() {
+  console.log('START');
+  const resp = await fetch('uploads/78KA42.pptx');
+  const ab   = await resp.arrayBuffer();
+  console.log('PPTX carregado: ' + ab.byteLength + ' bytes');
+
+  const zip = await JSZip.loadAsync(ab);
+  console.log('ZIP aberto');
+
+  // Dimensões
+  const presXml = await zip.file('ppt/presentation.xml')?.async('text') || '';
+  const sldSzM  = presXml.match(/<p:sldSz[^>]+cx="(\d+)"[^>]+cy="(\d+)"/);
+  const slideW  = sldSzM ? parseInt(sldSzM[1]) : 6858000;
+  const slideH  = sldSzM ? parseInt(sldSzM[2]) : 12193588;
+  console.log('slideW=' + slideW + ' slideH=' + slideH + ' aspect=' + (slideH/slideW).toFixed(4));
+
+  // Layout
+  const s1Rels = await zip.file('ppt/slides/_rels/slide1.xml.rels')?.async('text') || '';
+  const layoutM = s1Rels.match(/Type="[^"]*slideLayout"[^>]*Target="([^"]+)"/);
+  const layoutFile = layoutM ? layoutM[1].replace(/^\.\.\//, 'ppt/') : 'ppt/slideLayouts/slideLayout1.xml';
+  console.log('layoutFile=' + layoutFile);
+
+  const layoutRelsF = layoutFile.replace('slideLayouts/', 'slideLayouts/_rels/').replace('.xml', '.xml.rels');
+  const layoutXml   = await zip.file(layoutFile)?.async('text') || '';
+  const layoutRels  = await zip.file(layoutRelsF)?.async('text') || '';
+  const masterRels  = await zip.file('ppt/slideMasters/_rels/slideMaster1.xml.rels')?.async('text') || '';
+  const masterXml   = await zip.file('ppt/slideMasters/slideMaster1.xml')?.async('text') || '';
+  const slide1Xml   = await zip.file('ppt/slides/slide1.xml')?.async('text') || '';
+
+  console.log('layoutXml len=' + layoutXml.length + ' layoutRels len=' + layoutRels.length);
+  console.log('masterRels len=' + masterRels.length + ' slide1Xml len=' + slide1Xml.length);
+
+  // Imagens no rels
+  const mRels = [...masterRels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)];
+  const lRels = [...layoutRels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)];
+  const sRels = [...s1Rels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)];
+  console.log('IMAGENS master_rels=' + mRels.length + ' layout_rels=' + lRels.length + ' slide1_rels=' + sRels.length);
+  for (const r of mRels) console.log('  master img: ' + r[1] + ' -> ' + r[2]);
+  for (const r of lRels) console.log('  layout img: ' + r[1] + ' -> ' + r[2]);
+  for (const r of sRels) console.log('  slide1 img: ' + r[1] + ' -> ' + r[2]);
+
+  // PICs com posição
+  function extractPics(xml, label) {
+    if (!xml) return [];
+    const doc  = new DOMParser().parseFromString(xml, 'text/xml');
+    const pics = Array.from(doc.getElementsByTagNameNS('*', 'pic'));
+    const res  = [];
+    for (const pic of pics) {
+      const spPr = pic.getElementsByTagNameNS('*', 'spPr')[0];
+      const xfrm = spPr?.getElementsByTagNameNS('*', 'xfrm')[0];
+      const off  = xfrm?.getElementsByTagNameNS('*', 'off')[0];
+      const ext  = xfrm?.getElementsByTagNameNS('*', 'ext')[0];
+      const blip = pic.getElementsByTagNameNS('*', 'blip')[0];
+      let rId = '';
+      if (blip) for (const a of Array.from(blip.attributes)) if (a.localName==='embed'){rId=a.value;break;}
+      const x  = parseInt(off?.getAttribute('x')  || '0');
+      const y  = parseInt(off?.getAttribute('y')  || '0');
+      const cx = parseInt(ext?.getAttribute('cx') || '0');
+      const cy = parseInt(ext?.getAttribute('cy') || '0');
+      res.push({ label, rId, x, y, cx, cy });
+    }
+    return res;
+  }
+
+  const masterPics = extractPics(masterXml, 'MASTER');
+  const layoutPics = extractPics(layoutXml, 'LAYOUT');
+  const slide1Pics = extractPics(slide1Xml, 'SLIDE1');
+  console.log('PICs: master=' + masterPics.length + ' layout=' + layoutPics.length + ' slide1=' + slide1Pics.length);
+  for (const p of [...masterPics, ...layoutPics, ...slide1Pics]) {
+    const xPct = (p.x/slideW*100).toFixed(1);
+    const yPct = (p.y/slideH*100).toFixed(1);
+    const wPct = (p.cx/slideW*100).toFixed(1);
+    const hPct = (p.cy/slideH*100).toFixed(1);
+    console.log('  PIC['+p.label+'] rId='+p.rId+' x='+p.x+'('+xPct+'%) y='+p.y+'('+yPct+'%) cx='+p.cx+'('+wPct+'%) cy='+p.cy+'('+hPct+'%)');
+  }
+
+  // SPs com placeholders
+  function extractSps(xml, label) {
+    if (!xml) return [];
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const sps = Array.from(doc.getElementsByTagNameNS('*', 'sp'));
+    const res  = [];
+    for (const sp of sps) {
+      const cNvPr = sp.getElementsByTagNameNS('*', 'cNvPr')[0];
+      const name  = cNvPr?.getAttribute('name') || '';
+      if (!name.includes('{{')) continue;
+      const spPr = sp.getElementsByTagNameNS('*', 'spPr')[0];
+      const xfrm = spPr?.getElementsByTagNameNS('*', 'xfrm')[0];
+      const off  = xfrm?.getElementsByTagNameNS('*', 'off')[0];
+      const ext  = xfrm?.getElementsByTagNameNS('*', 'ext')[0];
+      const x  = parseInt(off?.getAttribute('x')  || '0');
+      const y  = parseInt(off?.getAttribute('y')  || '0');
+      const cx = parseInt(ext?.getAttribute('cx') || '0');
+      const cy = parseInt(ext?.getAttribute('cy') || '0');
+      // alinhamento
+      const lstStyle = sp.getElementsByTagNameNS('*', 'lstStyle')[0];
+      let algn = '';
+      if (lstStyle) {
+        for (const lvl of ['lvl1pPr','lvl2pPr','lvl3pPr']) {
+          const pp = lstStyle.getElementsByTagNameNS('*', lvl)[0];
+          if (pp) { algn = pp.getAttribute('algn') || ''; break; }
+        }
+      }
+      // txBody pPr
+      const txBody = sp.getElementsByTagNameNS('*', 'txBody')[0];
+      const pPr    = txBody?.getElementsByTagNameNS('*', 'pPr')[0];
+      const algn2  = pPr?.getAttribute('algn') || '';
+      res.push({ label, name, x, y, cx, cy, algn, algn2 });
+    }
+    return res;
+  }
+
+  const masterSps = extractSps(masterXml, 'MASTER');
+  const layoutSps = extractSps(layoutXml, 'LAYOUT');
+  const slide1Sps = extractSps(slide1Xml, 'SLIDE1');
+  const allSps = [...masterSps, ...layoutSps, ...slide1Sps];
+  console.log('SPs (placeholders): master=' + masterSps.length + ' layout=' + layoutSps.length + ' slide1=' + slide1Sps.length);
+  for (const s of allSps) {
+    const xPct = (s.x/slideW*100).toFixed(1);
+    const yPct = (s.y/slideH*100).toFixed(1);
+    const wPct = (s.cx/slideW*100).toFixed(1);
+    const hPct = (s.cy/slideH*100).toFixed(1);
+    console.log('  SP['+s.label+'] name="'+s.name+'" x='+s.x+'('+xPct+'%) y='+s.y+'('+yPct+'%) w='+s.cx+'('+wPct+'%) h='+s.cy+'('+hPct+'%) algn_lst="'+s.algn+'" algn_pPr="'+s.algn2+'"');
+  }
+
+  // Busca shape do produtor e loga XML completo
+  const doc3 = new DOMParser().parseFromString(layoutXml, 'text/xml');
+  const allSpEls = Array.from(doc3.getElementsByTagNameNS('*','sp'));
+  for (const sp of allSpEls) {
+    const cNvPr = sp.getElementsByTagNameNS('*','cNvPr')[0];
+    const name = cNvPr?.getAttribute('name') || '';
+    if (name.toLowerCase().includes('produtor') || name.includes('produtor')) {
+      console.log('=== XML do shape produtor ===');
+      console.log(new XMLSerializer().serializeToString(sp));
+    }
+  }
+
+  // Tamanho do maior arquivo de media para confirmar qual é o bg
+  const mediaFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/media/'));
+  console.log('Total media files: ' + mediaFiles.length);
+  for (const mf of mediaFiles) {
+    const f = zip.file(mf);
+    if (f) {
+      const blob = await f.async('blob');
+      console.log('  media: ' + mf + ' = ' + (blob.size/1024).toFixed(0) + 'KB type=' + blob.type);
+    }
+  }
+
+  console.log('DONE');
+}
+
+run().catch(e => console.error('ERRO: ' + e.message + '\n' + e.stack));
+</script>
+</body>
+</html>

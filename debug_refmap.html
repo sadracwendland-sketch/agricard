@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug ref map</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+function blobToDataUrl(blob) {
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(blob);});
+}
+
+async function run() {
+  const resp = await fetch('uploads/78KA42.pptx');
+  const ab   = await resp.arrayBuffer();
+  const zip  = await JSZip.loadAsync(ab);
+
+  // Para cada imagem, descobre em qual arquivo .rels ela é referenciada
+  const mediaFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/media/')).sort();
+  const allRels = Object.keys(zip.files).filter(f => f.endsWith('.rels')).sort();
+
+  const imgRefs = {}; // image.png -> [arquivo.rels, ...]
+  for (const rf of allRels) {
+    const txt = await zip.file(rf).async('text');
+    for (const m of [...txt.matchAll(/Id="([^"]+)"[^>]*Target="([^"]*media\/(image\d+\.\w+))"/gi)]) {
+      const img = 'ppt/media/' + m[3];
+      if (!imgRefs[img]) imgRefs[img] = [];
+      imgRefs[img].push({ rels: rf, rId: m[1] });
+    }
+  }
+
+  console.log('=== Mapa imagem -> rels ===');
+  for (const [img, refs] of Object.entries(imgRefs)) {
+    for (const ref of refs) {
+      console.log(img.replace('ppt/media/','') + ' -> ' + ref.rels + ' ('+ref.rId+')');
+    }
+  }
+
+  // Agora para cada layout, mostra o que tem
+  console.log('\n=== Layout7 (usado pelo slide1) ===');
+  const l7Rels = await zip.file('ppt/slideLayouts/_rels/slideLayout7.xml.rels').async('text');
+  const l7Xml  = await zip.file('ppt/slideLayouts/slideLayout7.xml').async('text');
+  console.log('rels length: ' + l7Rels.length);
+  // Conta pics no XML
+  const doc7 = new DOMParser().parseFromString(l7Xml, 'text/xml');
+  const pics7 = Array.from(doc7.getElementsByTagNameNS('*','pic'));
+  console.log('PICs no layout7: ' + pics7.length);
+
+  // Mostra thumbnail do que cada layout referencia
+  document.body.style.background='#111'; document.body.style.color='#eee';
+  document.body.style.fontFamily='monospace'; document.body.style.padding='20px';
+
+  // Mostra a imagem image8 (logo no layout7)
+  const img8 = zip.file('ppt/media/image8.png');
+  if (img8) {
+    const blob = await img8.async('blob');
+    const du = await blobToDataUrl(blob);
+    const el = document.createElement('div');
+    el.innerHTML = `<h3 style="color:#81c784">image8.png (${(blob.size/1024).toFixed(0)}KB) — logo do layout7</h3>
+      <img src="${du}" style="max-width:300px;border:2px solid #81c784">
+      <p>Esta é a imagem que aparece no card como logo da variedade</p>`;
+    document.body.appendChild(el);
+  }
+
+  // Mostra a imagem image6 (1936KB)
+  const img6 = zip.file('ppt/media/image6.png');
+  if (img6) {
+    const blob = await img6.async('blob');
+    const du = await blobToDataUrl(blob);
+    const el = document.createElement('div');
+    el.innerHTML = `<h3 style="color:#ff9800">image6.png (${(blob.size/1024).toFixed(0)}KB) — outra imagem grande</h3>
+      <img src="${du}" style="max-width:300px;border:2px solid #ff9800">`;
+    document.body.appendChild(el);
+    // Onde está referenciada?
+    console.log('image6 está em: ' + (imgRefs['ppt/media/image6.png']||[]).map(r=>r.rels).join(', '));
+  }
+
+  // Mostra todas as imagens pequenas
+  for (const fname of ['ppt/media/image2.png','ppt/media/image3.png','ppt/media/image4.png','ppt/media/image5.png','ppt/media/image7.png']) {
+    const f = zip.file(fname);
+    if (f) {
+      const blob = await f.async('blob');
+      const du = await blobToDataUrl(blob);
+      const refs = imgRefs[fname] || [];
+      const el = document.createElement('span');
+      el.innerHTML = `<img src="${du}" title="${fname} (${(blob.size/1024).toFixed(0)}KB) em: ${refs.map(r=>r.rels.replace('ppt/','').replace('slideLayouts/_rels/','L')).join(',')}" style="max-width:80px;max-height:80px;margin:4px;border:1px solid #444">`;
+      document.body.appendChild(el);
+      console.log(fname + ' (' + (blob.size/1024).toFixed(0) + 'KB) -> ' + refs.map(r=>r.rels).join(', '));
+    }
+  }
+
+  console.log('DONE');
+}
+run().catch(e => console.error('ERRO: '+e.message));
+</script>
+</body>
+</html>

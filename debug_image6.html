@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>debug image6</title></head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+async function run() {
+  const resp = await fetch('uploads/78KA42.pptx');
+  const ab   = await resp.arrayBuffer();
+  const zip  = await JSZip.loadAsync(ab);
+
+  // Lista todos os arquivos rels
+  const relsFiles = Object.keys(zip.files).filter(f => f.endsWith('.rels'));
+  console.log('=== Todos os .rels ===');
+  for (const rf of relsFiles) {
+    const txt = await zip.file(rf).async('text');
+    if (txt.includes('image6') || txt.includes('image2') || txt.includes('image3') || txt.includes('image4')) {
+      console.log('ENCONTROU em ' + rf + ':');
+      // Lista cada Relationship
+      const rels = [...txt.matchAll(/<Relationship[^/]+\/>/g)];
+      for (const r of rels) console.log('  ' + r[0]);
+    }
+  }
+
+  // Lista todos os XMLs que referenciam image6
+  const xmlFiles = Object.keys(zip.files).filter(f => f.endsWith('.xml'));
+  for (const xf of xmlFiles) {
+    try {
+      const txt = await zip.file(xf).async('text');
+      if (txt.includes('image6') || txt.includes('image2.png') || txt.includes('image3.png')) {
+        console.log('XML que referencia image: ' + xf + ' len=' + txt.length);
+      }
+    } catch(e) {}
+  }
+
+  // Verifica todos os slideMasters e seus rels
+  console.log('=== SlideMasters ===');
+  const smFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideMasters/') && f.endsWith('.xml') && !f.includes('_rels'));
+  for (const sm of smFiles) {
+    console.log('Master: ' + sm);
+    const relsPath = sm.replace('slideMasters/', 'slideMasters/_rels/').replace('.xml', '.xml.rels');
+    const rels = await zip.file(relsPath)?.async('text') || '';
+    const imgRels = [...rels.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/gi)];
+    for (const r of imgRels) console.log('  rId=' + r[1] + ' target=' + r[2]);
+  }
+
+  // Verifica todos os slideLayouts e seus rels
+  console.log('=== SlideLayouts ===');
+  const slFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/') && f.endsWith('.xml') && !f.includes('_rels'));
+  for (const sl of slFiles) {
+    const relsPath = sl.replace('slideLayouts/', 'slideLayouts/_rels/').replace('.xml', '.xml.rels');
+    const rels = await zip.file(relsPath)?.async('text') || '';
+    const imgRels = [...rels.matchAll(/Id="([^"]+)"[^>]*Target="[^"?#]+\.(png|jpg|jpeg)/gi)];
+    if (imgRels.length) {
+      console.log('Layout ' + sl + ':');
+      for (const r of imgRels) console.log('  rId=' + r[1] + ' file=' + r[2]);
+    }
+  }
+
+  // Verifica todos os slides e seus rels
+  console.log('=== Slides ===');
+  const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/') && f.endsWith('.xml') && !f.includes('_rels'));
+  for (const sf of slideFiles) {
+    const relsPath = sf.replace('slides/', 'slides/_rels/').replace('.xml', '.xml.rels');
+    const rels = await zip.file(relsPath)?.async('text') || '';
+    const imgRels = [...rels.matchAll(/Id="([^"]+)"[^>]*Target="([^"?#]+\.(png|jpg|jpeg))/gi)];
+    if (imgRels.length) {
+      console.log('Slide ' + sf + ':');
+      for (const r of imgRels) console.log('  rId=' + r[1] + ' file=' + r[2]);
+    }
+    // PICs no slide
+    const xml = await zip.file(sf).async('text');
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const pics = Array.from(doc.getElementsByTagNameNS('*','pic'));
+    console.log('  PICs no ' + sf + ': ' + pics.length);
+    for (const pic of pics) {
+      const spPr = pic.getElementsByTagNameNS('*','spPr')[0];
+      const xfrm = spPr?.getElementsByTagNameNS('*','xfrm')[0];
+      const off  = xfrm?.getElementsByTagNameNS('*','off')[0];
+      const ext  = xfrm?.getElementsByTagNameNS('*','ext')[0];
+      const blip = pic.getElementsByTagNameNS('*','blip')[0];
+      let rId=''; if(blip) for(const a of Array.from(blip.attributes)) if(a.localName==='embed'){rId=a.value;break;}
+      console.log('    PIC rId='+rId+' x='+off?.getAttribute('x')+' y='+off?.getAttribute('y')+' cx='+ext?.getAttribute('cx')+' cy='+ext?.getAttribute('cy'));
+    }
+  }
+
+  console.log('DONE');
+}
+run().catch(e => console.error('ERRO: '+e.message));
+</script>
+</body>
+</html>

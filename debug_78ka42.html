@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>🔬 Debug 78KA42 – Posições EMU</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; font-size: 12px; }
+  h1 { color: #4fc3f7; }
+  h2 { color: #81c784; margin: 20px 0 6px; font-size: 13px; }
+  pre { background: #0a0a0a; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }
+  .ok { color: #81c784; } .err { color: #ef9a9a; } .warn { color: #ffcc80; }
+  .section { background: #1a1a1a; border-radius: 6px; padding: 14px; margin-bottom: 14px; border-left: 3px solid #4fc3f7; }
+  .img-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .img-card { background: #263238; padding: 8px; border-radius: 6px; text-align: center; }
+  .img-card img { max-width: 150px; max-height: 200px; display: block; margin: 0 auto 4px; }
+  .img-card small { color: #aaa; font-size: 10px; display: block; word-break: break-all; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border: 1px solid #333; padding: 5px 8px; text-align: left; }
+  th { background: #1e3a1e; color: #81c784; }
+  tr:nth-child(even) { background: #151515; }
+  canvas { border: 2px solid #4fc3f7; border-radius: 4px; display: block; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; margin: 2px; }
+  .badge-blue { background: #1565c0; } .badge-green { background: #2e7d32; } .badge-orange { background: #e65100; }
+  #status { color: #4fc3f7; padding: 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>🔬 Debug 78KA42 – Análise de Posições EMU</h1>
+<div id="status">⏳ Carregando PPTX…</div>
+<div id="output"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+const out = document.getElementById('output');
+const status = document.getElementById('status');
+
+function sec(title, content, color='#4fc3f7') {
+  out.innerHTML += `<div class="section" style="border-left-color:${color}"><h2>${title}</h2>${content}</div>`;
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(blob); });
+}
+
+function loadImage(src) {
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error('fail')); img.src = src; });
+}
+
+function emuToMm(emu) { return (emu / 914400 * 25.4).toFixed(1); }
+function emuToPct(emu, total) { return (emu / total * 100).toFixed(1); }
+
+async function analyzePptx(arrayBuffer) {
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  out.innerHTML = '';
+
+  // ── 1. Dimensões ──────────────────────────────────────────
+  const presXml = await zip.file('ppt/presentation.xml')?.async('text') || '';
+  const sldSzM  = presXml.match(/<p:sldSz[^>]+cx="(\d+)"[^>]+cy="(\d+)"/);
+  const slideW  = sldSzM ? parseInt(sldSzM[1]) : 6858000;
+  const slideH  = sldSzM ? parseInt(sldSzM[2]) : 12193588;
+  const aspectRatio = (slideH/slideW).toFixed(4);
+  sec('📐 Dimensões do Slide',
+    `<table><tr><th>EMU W</th><th>EMU H</th><th>mm W</th><th>mm H</th><th>Aspect Ratio</th></tr>
+     <tr><td>${slideW}</td><td>${slideH}</td><td>${emuToMm(slideW)}</td><td>${emuToMm(slideH)}</td><td>${aspectRatio}</td></tr></table>`
+  );
+
+  // ── 2. Qual layout o slide usa ────────────────────────────
+  const s1Rels = await zip.file('ppt/slides/_rels/slide1.xml.rels')?.async('text') || '';
+  const layoutM = s1Rels.match(/Type="[^"]*slideLayout"[^>]*Target="([^"]+)"/);
+  const layoutFile = layoutM ? layoutM[1].replace(/^\.\.\//, 'ppt/') : 'ppt/slideLayouts/slideLayout1.xml';
+  const layoutRelsF = layoutFile.replace('slideLayouts/', 'slideLayouts/_rels/').replace('.xml', '.xml.rels');
+  const layoutXml  = await zip.file(layoutFile)?.async('text') || '';
+  const layoutRels = await zip.file(layoutRelsF)?.async('text') || '';
+  const masterRels = await zip.file('ppt/slideMasters/_rels/slideMaster1.xml.rels')?.async('text') || '';
+  const masterXml  = await zip.file('ppt/slideMasters/slideMaster1.xml')?.async('text') || '';
+  const slide1Xml  = await zip.file('ppt/slides/slide1.xml')?.async('text') || '';
+
+  sec('📄 Arquivos', `
+    <div>Layout: <span class="ok">${layoutFile}</span></div>
+    <div>Layout XML: ${layoutXml ? '<span class="ok">✅ '+layoutXml.length+' chars</span>' : '<span class="err">❌ não encontrado</span>'}</div>
+    <div>Layout Rels: ${layoutRels ? '<span class="ok">✅ '+layoutRels.length+' chars</span>' : '<span class="err">❌ não encontrado</span>'}</div>
+    <div>Master Rels: ${masterRels ? '<span class="ok">✅ '+masterRels.length+' chars</span>' : '<span class="warn">⚠️ não encontrado</span>'}</div>
+  `);
+
+  // ── 3. Imagens no master rels ─────────────────────────────
+  const masterImgRels = [...masterRels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)];
+  const layoutImgRels = [...layoutRels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)];
+  const slide1ImgRels = [...s1Rels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)];
+
+  let imgHtml = `<table><tr><th>Fonte</th><th>rId</th><th>Arquivo</th><th>Tamanho</th><th>Preview</th></tr>`;
+  for (const [rels, label] of [[masterImgRels,'master'],[layoutImgRels,'layout'],[slide1ImgRels,'slide1']]) {
+    for (const rel of rels) {
+      const fname = `ppt/media/${rel[2].split('/').pop()}`;
+      const f = zip.file(fname);
+      if (f) {
+        const blob = await f.async('blob');
+        const du = await blobToDataUrl(blob);
+        imgHtml += `<tr><td><span class="badge badge-${label==='master'?'blue':label==='layout'?'green':'orange'}">${label}</span></td>
+          <td>${rel[1]}</td><td>${rel[2]}</td><td>${(blob.size/1024).toFixed(0)}KB</td>
+          <td><img src="${du}" style="max-width:60px;max-height:60px;"></td></tr>`;
+      }
+    }
+  }
+  imgHtml += '</table>';
+  sec('🖼 Imagens nos .rels', imgHtml);
+
+  // ── 4. Elementos <p:pic> com posição (namespace-safe) ─────
+  async function extractPics(xml, rels, label) {
+    if (!xml || !rels) return [];
+    const rIdToFile = {};
+    for (const rel of [...rels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)]) {
+      rIdToFile[rel[1]] = `ppt/media/${rel[2].split('/').pop()}`;
+    }
+    const doc  = new DOMParser().parseFromString(xml, 'text/xml');
+    const pics = Array.from(doc.getElementsByTagNameNS('*', 'pic'));
+    const result = [];
+    for (const pic of pics) {
+      const spPr = pic.getElementsByTagNameNS('*', 'spPr')[0];
+      const xfrm = spPr?.getElementsByTagNameNS('*', 'xfrm')[0];
+      const off  = xfrm?.getElementsByTagNameNS('*', 'off')[0];
+      const ext  = xfrm?.getElementsByTagNameNS('*', 'ext')[0];
+      const blip = pic.getElementsByTagNameNS('*', 'blip')[0];
+      let rId = '';
+      if (blip) for (const a of Array.from(blip.attributes)) if (a.localName==='embed') { rId = a.value; break; }
+      const fname = rIdToFile[rId] || '';
+      const x  = parseInt(off?.getAttribute('x')  || '0');
+      const y  = parseInt(off?.getAttribute('y')  || '0');
+      const cx = parseInt(ext?.getAttribute('cx') || '0');
+      const cy = parseInt(ext?.getAttribute('cy') || '0');
+      let du = null;
+      if (fname) { const f = zip.file(fname); if (f) du = await blobToDataUrl(await f.async('blob')); }
+      result.push({ label, fname: fname.replace('ppt/media/',''), rId, x, y, cx, cy, du });
+    }
+    return result;
+  }
+
+  const masterPics = await extractPics(masterXml, masterRels, 'master');
+  const layoutPics = await extractPics(layoutXml, layoutRels, 'layout');
+  const slide1Pics = await extractPics(slide1Xml, s1Rels, 'slide1');
+  const allPics = [...masterPics, ...layoutPics, ...slide1Pics];
+
+  let picsHtml = `<table><tr><th>Fonte</th><th>Arquivo</th><th>x (EMU)</th><th>y (EMU)</th><th>cx (EMU)</th><th>cy (EMU)</th><th>x%</th><th>y%</th><th>w%</th><th>h%</th><th>Preview</th></tr>`;
+  for (const p of allPics) {
+    const xPct = emuToPct(p.x, slideW), yPct = emuToPct(p.y, slideH);
+    const wPct = emuToPct(p.cx, slideW), hPct = emuToPct(p.cy, slideH);
+    picsHtml += `<tr>
+      <td><span class="badge badge-${p.label==='master'?'blue':p.label==='layout'?'green':'orange'}">${p.label}</span></td>
+      <td>${p.fname||'<span class="warn">sem rId</span>'}</td>
+      <td>${p.x}</td><td>${p.y}</td><td>${p.cx}</td><td>${p.cy}</td>
+      <td class="${parseFloat(xPct)>0?'ok':'warn'}">${xPct}%</td>
+      <td>${yPct}%</td>
+      <td class="${parseFloat(wPct)>50?'ok':'warn'}">${wPct}%</td>
+      <td>${hPct}%</td>
+      <td>${p.du?`<img src="${p.du}" style="max-width:60px;max-height:60px;">`:'<span class="warn">sem img</span>'}</td>
+    </tr>`;
+  }
+  picsHtml += '</table>';
+  sec('🖼 Elementos &lt;p:pic&gt; com Posição', picsHtml);
+
+  // ── 5. Elementos <p:sp> de texto (placeholders) ───────────
+  function extractSps(xml, label) {
+    if (!xml) return [];
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const sps = Array.from(doc.getElementsByTagNameNS('*', 'sp'));
+    const result = [];
+    for (const sp of sps) {
+      const cNvPr = sp.getElementsByTagNameNS('*', 'cNvPr')[0];
+      const name  = cNvPr?.getAttribute('name') || '';
+      if (!name.includes('{{')) continue;
+      const spPr = sp.getElementsByTagNameNS('*', 'spPr')[0];
+      const xfrm = spPr?.getElementsByTagNameNS('*', 'xfrm')[0];
+      const off  = xfrm?.getElementsByTagNameNS('*', 'off')[0];
+      const ext  = xfrm?.getElementsByTagNameNS('*', 'ext')[0];
+      const x  = parseInt(off?.getAttribute('x')  || '0');
+      const y  = parseInt(off?.getAttribute('y')  || '0');
+      const cx = parseInt(ext?.getAttribute('cx') || '0');
+      const cy = parseInt(ext?.getAttribute('cy') || '0');
+      // pega alinhamento
+      const pPr  = sp.getElementsByTagNameNS('*', 'pPr')[0];
+      const algn = pPr?.getAttribute('algn') || '(não definido)';
+      // pega defRPr para alinhamento via lstStyle
+      const lstStyle = sp.getElementsByTagNameNS('*', 'lstStyle')[0];
+      let lstAlgn = '';
+      if (lstStyle) {
+        for (const lvl of ['lvl1pPr','lvl2pPr','lvl3pPr']) {
+          const pp = lstStyle.getElementsByTagNameNS('*', lvl)[0];
+          if (pp) { lstAlgn = pp.getAttribute('algn') || ''; break; }
+        }
+      }
+      result.push({ label, name, x, y, cx, cy, algn, lstAlgn });
+    }
+    return result;
+  }
+
+  const masterSps = extractSps(masterXml, 'master');
+  const layoutSps = extractSps(layoutXml, 'layout');
+  const slide1Sps = extractSps(slide1Xml, 'slide1');
+  const allSps = [...masterSps, ...layoutSps, ...slide1Sps];
+
+  let spsHtml = `<table><tr><th>Fonte</th><th>Nome ({{placeholder}})</th><th>x%</th><th>y%</th><th>w%</th><th>h%</th><th>algn (pPr)</th><th>algn (lstStyle)</th></tr>`;
+  for (const s of allSps) {
+    const xPct = emuToPct(s.x, slideW), yPct = emuToPct(s.y, slideH);
+    const wPct = emuToPct(s.cx, slideW), hPct = emuToPct(s.cy, slideH);
+    spsHtml += `<tr>
+      <td><span class="badge badge-${s.label==='master'?'blue':s.label==='layout'?'green':'orange'}">${s.label}</span></td>
+      <td class="ok">${s.name}</td>
+      <td>${xPct}%</td><td>${yPct}%</td>
+      <td>${wPct}%</td><td>${hPct}%</td>
+      <td class="${s.algn!=='(não definido)'?'ok':'warn'}">${s.algn}</td>
+      <td class="${s.lstAlgn?'ok':'warn'}">${s.lstAlgn||'—'}</td>
+    </tr>`;
+  }
+  spsHtml += '</table>';
+  sec('📝 Placeholders de Texto &lt;p:sp&gt;', spsHtml, '#81c784');
+
+  // ── 6. Renderização do slide completo para comparar ───────
+  // Extrai background
+  let bgData = null;
+  const rIdToFileMaster = {};
+  for (const rel of [...masterRels.matchAll(/Id="([^"]+)"[^>]*Target="[^"]*media\/([^"?#]+\.(png|jpg|jpeg|gif|bmp|webp))"/gi)]) {
+    rIdToFileMaster[rel[1]] = `ppt/media/${rel[2].split('/').pop()}`;
+  }
+  if (Object.keys(rIdToFileMaster).length) {
+    // tenta via p:bg
+    const doc = new DOMParser().parseFromString(masterXml, 'text/xml');
+    const bgs = Array.from(doc.getElementsByTagNameNS('*', 'bg'));
+    for (const bg of bgs) {
+      const blip = bg.getElementsByTagNameNS('*', 'blip')[0];
+      if (blip) {
+        let rId=''; for (const a of Array.from(blip.attributes)) if (a.localName==='embed'){rId=a.value;break;}
+        if (rId && rIdToFileMaster[rId]) { const f=zip.file(rIdToFileMaster[rId]); if(f){bgData=await blobToDataUrl(await f.async('blob'));break;} }
+      }
+    }
+    if (!bgData) {
+      const entries = [];
+      for (const [rId,fname] of Object.entries(rIdToFileMaster)) { const f=zip.file(fname); if(f){const b=await f.async('blob');entries.push({fname,blob:b});} }
+      if (entries.length) { const best=entries.sort((a,b)=>b.blob.size-a.blob.size)[0]; bgData=await blobToDataUrl(best.blob); }
+    }
+  }
+
+  // Renderiza canvas de referência
+  const CANVAS_W = 400;
+  const CANVAS_H = Math.round(CANVAS_W * slideH / slideW);
+  const canvas = document.createElement('canvas');
+  canvas.width = CANVAS_W; canvas.height = CANVAS_H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,CANVAS_W,CANVAS_H);
+
+  if (bgData) {
+    try { const bg = await loadImage(bgData); ctx.drawImage(bg,0,0,CANVAS_W,CANVAS_H); } catch(e) {}
+  }
+
+  const EMU = 914400/96;
+  const sX = CANVAS_W/(slideW/EMU), sY = CANVAS_H/(slideH/EMU);
+
+  // Desenha todas as imagens fixas
+  for (const p of allPics) {
+    if (!p.du || p.cx<=0 || p.cy<=0) continue;
+    try {
+      const img = await loadImage(p.du);
+      const px=Math.round((p.x/EMU)*sX), py=Math.round((p.y/EMU)*sY);
+      const pw=Math.round((p.cx/EMU)*sX), ph=Math.round((p.cy/EMU)*sY);
+      if(pw>0&&ph>0) ctx.drawImage(img,px,py,pw,ph);
+    } catch(e){}
+  }
+
+  // Desenha os placeholders como retângulos coloridos
+  for (const s of allSps) {
+    const px=Math.round((s.x/EMU)*sX), py=Math.round((s.y/EMU)*sY);
+    const pw=Math.round((s.cx/EMU)*sX), ph=Math.round((s.cy/EMU)*sY);
+    if(pw<=0||ph<=0) continue;
+    ctx.strokeStyle='#FF5722'; ctx.lineWidth=1.5;
+    ctx.strokeRect(px,py,pw,ph);
+    ctx.fillStyle='rgba(255,87,34,0.15)';
+    ctx.fillRect(px,py,pw,ph);
+    ctx.fillStyle='#FF5722'; ctx.font='bold 8px monospace';
+    const ph_name = s.name.replace(/\{\{/g,'').replace(/\}\}/g,'').substring(0,20);
+    ctx.fillText(ph_name, px+2, py+10);
+  }
+
+  sec('🖥 Renderização de Referência (imagens fixas + bounding boxes placeholders)',
+    `<div>${canvas.outerHTML}</div>
+     <div style="margin-top:6px;color:#aaa;font-size:10px">Vermelho = áreas dos placeholders de texto</div>`
+  , '#ff9800');
+
+  // ── 7. Dump raw XML dos shapes importantes ────────────────
+  // Busca o shape "produtor" no layout
+  const doc2 = new DOMParser().parseFromString(layoutXml, 'text/xml');
+  const allSpEls = Array.from(doc2.getElementsByTagNameNS('*','sp'));
+  let produtorXml = '';
+  for (const sp of allSpEls) {
+    const cNvPr = sp.getElementsByTagNameNS('*','cNvPr')[0];
+    if (cNvPr?.getAttribute('name')?.toLowerCase().includes('produtor')) {
+      produtorXml = new XMLSerializer().serializeToString(sp);
+      break;
+    }
+  }
+  if (produtorXml) {
+    sec('🔍 XML Raw do shape {{produtor}}', `<pre>${produtorXml.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`, '#e91e63');
+  }
+
+  status.textContent = '✅ Análise concluída!';
+}
+
+// Carrega o PPTX automaticamente do servidor
+fetch('uploads/78KA42.pptx')
+  .then(r => r.arrayBuffer())
+  .then(ab => analyzePptx(ab))
+  .catch(e => { status.textContent = '❌ Erro: ' + e.message; console.error(e); });
+</script>
+</body>
+</html>
