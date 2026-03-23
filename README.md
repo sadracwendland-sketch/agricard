@@ -174,15 +174,3 @@ uploads/
 | `userScreen > user-new-record` | Novo registro + upload termo |
 | `userScreen > user-records` | Meus registros |
 | `userScreen > user-cards` | Meus cards |
-
----
-
-## 📋 Pendências / Próximos Passos
-
-- [ ] Adicionar paginação na lista de registros e auditoria (>500 registros)
-- [ ] Notificação por e-mail ao admin quando novo usuário se cadastra
-- [ ] Preview do termo (PDF inline) dentro do modal
-- [ ] Filtros avançados por data/cultura/safra nos registros
-- [ ] Relatório comparativo de produtividade por variedade/região
-- [ ] Impressão/PDF do card direto pelo navegador
-- [ ] Modo offline (service worker) para geração sem internet
